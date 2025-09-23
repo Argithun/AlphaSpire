@@ -1,0 +1,42 @@
+# Python 缓存和虚拟环境
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+.eggs/
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+ENV/
+*.sqlite3
+*.db
+
+# IDE/编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 日志/临时文件
+*.log
+*.tmp
+
+# Jupyter/实验数据
+.ipynb_checkpoints/
+
+# 项目草稿和数据
+test/
+
+# Playwright/Browser自动生成的数据
+playwright/.cache/
+
+# 其他可执行或临时文件
+*.bak
