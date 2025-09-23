@@ -1,0 +1,9 @@
+{
+  "title": "关于Gemini CLI在vscode/trae上使用cline 403的备用解决方案",
+  "description": "今早在论坛刷帖子，看到JX79797、KZ55390两位佬关于GeminiCLI的使用已经配置，尝试了一下，命令行内gemini已经可以正常使用的情况下，cline无论是vscode还是trae都无法调用成功，始终403，这个时候我想了一下现存的就两个问题，一个是调用一个是...",
+  "post_body": "今早在论坛刷帖子，看到\nJX79797、\nKZ55390\n两位佬关于GeminiCLI的使用已经配置，尝试了一下，命令行内gemini已经可以正常使用的情况下，cline无论是vscode还是trae都无法调用成功，始终403，这个时候我想了一下现存的就两个问题，一个是调用一个是代理，代理在我开启tun模式之后命令行使用gemini没问题，就剩下调用的问题了。\n满世界的搜索，看到最多的是cline因为google警告所以关闭了对geminicli的支持（但是mac跟部分win10,11又是能正常使用）那就先不管这个，针对于命令行 gemini能调用成功的情况：\n大家可以在插件库搜索“zgsm”出来一个Costrict的ai插件，这个里面支持geminicli的调用，只有一步需要注意一下，需要点击Costrict的“设置”-“Google Cloud 项目ID(可选)”填入Google Cloud上的项目id，这样才能正常调用。\n具体Google Cloud 项目ID如何获取：\n访问并登录\nhttps://console.cloud.google.com/welcome\n，右上角找到Google Cloud，会看到在这个logo的右边有“My first Project”的按钮，点开可以看到有个弹窗，弹窗内是关于你的google cloud项目的列表，第三列ID就是你需要的项目ID，复制这个记录下来。\n还剩最后一步，需要设置项目为开启\n在搜索栏输入“Gemini for Google Cloud”然后点击搜索出来的“Gemini for Google Cloud”，点击“Enable”开启服务，到此设置完毕。",
+  "post_comments": [
+    "感谢分享",
+    "非常感谢，我和你一样的情况被劝退了，我也是命令行内gemini已经可以正常使用的情况下，cline无论是vscode还是trae都无法调用成功，给我挫败坏了，感谢你可以分享自己的坑，让我出坑。"
+  ]
+}

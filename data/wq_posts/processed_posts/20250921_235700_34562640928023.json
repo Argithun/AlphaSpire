@@ -1,0 +1,20 @@
+{
+  "title": "如何利用tvr操作符与alpha起舞",
+  "description": "ts_target_tvr_decay(x, lambda_min=0, lambda_max=1, target_tvr=0.1) 需要输入的参数为以上4个。...",
+  "post_body": "ts_target_tvr_decay(x, lambda_min=0, lambda_max=1, target_tvr=0.1)\n需要输入的参数为以上4个。\n通过lambda_min值（不衰减），和lamdba_max值（衰减）的搜索空间中，去搜索lambda（λ)值，来得到target_tvr值。\n也就是说，足够大的搜索空间，通过能得到一个λ，使得alpha的tvr为target_tvr值。\n而目前多数顾问采用的是\nlambda_min=0, lambda_max=1, target_tvr=[0.1,0.15,0.2,0.25] 这样的用法。\n但按照我个人理解，设置成\nlambda_min=0, lambda_max=5, target_tvr=[0.01，0.15，1]   （其中1是tvr参数的是上限值）\n在扩大搜索空间后，使得alpha tvr的变化呈现缩小值、理想值、强化值。 这样的用法会更有意义。\n因为与其在固定的搜索空间去趋近target_tvr ，不如扩大搜索空间，跳出局部求解更为实际。如果将\nlambda_min=0, lambda_max=5, target_tvr=0.15作为模板，那么搜索对于tvr弱的alpha，λ值会趋向于5，旧信号衰减更快，增强tvr,趋近0.15。对于tvr强的alpha，λ值会趋向于0，旧信号衰减更慢，降低tvr趋近0.15。是一个自适应的模板。类似decay的用法。\n若如果不存在相应的λ值，0.01和1也使得tvr的变化朝减弱和增强进行了延伸。综上所述，tvr 操作符总是能将tvr值按照自己理想的方向进行变化，是一个很实用的操作符。\n比如这个alpha，看到tvr为2.58%， 通常是认为是一个beta而放弃提交。\n但通过增强，可能会使得tvr落到理想的区间内，可以不用担心因为tvr<5%or<10% 降低可用性。\n降低tvr的方式参考游戏王的降tvr帖子即可。\n其他微调tvr的方式如调整decay trucation ts_op的day 亦可尝试。",
+  "post_comments": [
+    "可以补充一下增强的具体思路",
+    "感谢分享，很好的点子\n按照相同的思路，lambda min是否可以写成-5？这样±都进行便利搜索，而非只局限于0到5，此外，target最大值是否可以考虑改为0.7，这是提交因子的理论上线（glb high turn主题不在此列）",
+    "学到了，还能变大啊，lambda_max 设置成大于1， target_tvr设置成1就行是吧",
+    "@\nZS59763\nwqb平台中，min值只能设置为非负数，因此最小为0，只能扩大max值。   target值为趋向你的设置，如果你为了alpha多样性，希望得到高tvr的alpha是可以这么做的。但这样通常会使得margin过低，alpha本身的收益不理想。",
+    "@\nWF37935\n是的，可以适当扩大max值。搜索空间越大，计算速度越慢。target_tvr的取值在0-1之间 根据alpha的情况调整。",
+    "好强大，学习了，刷新我对降低turnover的操作符的认知了",
+    "感谢分享，这个可以找机会直接拿来用用",
+    "大佬，具体再讲讲\nlambda_min, lambda_max\n这两个参数的意思吧，由于平台上没有给出这两个操作符的含义，仅看帖子也理解不了这两个参数具体是如何作用于因子值的。\n主要是ts_target_tvr_decay这个运输符增加turnover的机理实在是难以理解。我的想法是，一个因子在decay为0的时候turnover最大，实在不清楚这种情况下如何用ts_target_tvr_decay再增加换手",
+    "lambda min和lambda max到底是什么含义呢，之前在论坛搜了一些帖子都是给0-1之间的值",
+    "@YX50005\n因为0和1是默认值。\nlambda min和lambda max就是这个函数中用于寻找target_tvr的lambda的取值范围呀。",
+    "@\nJX14975\nlambda min和lambda max就是这个函数中用于寻找target_tvr的lambda的取值范围。\n至于找到这个lambda之后，是如何进行f(lambda)实现target_tvr，可以按兴趣去拓展。我感觉机制比较复杂，并没有去深入了解。\n关于decay=0还是进一步改变了换手，我个人的理解是可以参考setting中的neut是最外部给alpha进行了neut了一样。\n这里也是先进行tvr转换再进行的decay影响换手。 这也是alpha的tvr结果只会尽量逼近target_tvr的一个原因。",
+    "我尝试使用了这个操作符，结果显示除了turnover上升之外（摆脱死鱼），其他指标几乎没有变化（margin除外，下降了）。想请问对于这样的alpha，是否有必要使用这个操作符，因为tvr上升的同时，其他指标也应该变化。如果只是为了摆脱死鱼，导致margin无意义的下降，这样是否得不偿失。",
+    "@\nYZ88594\n那么对于这样的alpha，这个操作符只是增加了换手但是没有带来收益，说明了alpha本身的收益就是靠“死鱼来获得的”，使用了这个操作符，很可能是在卖出后又继续买入了本身“死鱼”时持有的股票。这个alpha缺失了作为“alpha”应有的主动特性。\n那末，考虑的方面应该主要是查看是否对pc产生了影响，是否要提交这样一个只是tvr上不那么死鱼的alpha，从可用性上提高它被选中的概率。"
+  ]
+}

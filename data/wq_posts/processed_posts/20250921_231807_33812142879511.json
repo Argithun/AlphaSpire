@@ -1,0 +1,28 @@
+{
+  "title": "Lab 和 APP_wqb 协同效应初探：观察特征与下一步操作建议",
+  "description": "概述：找到某个信号后下一步该怎么操作，是个经常遇到的问题。下面结合一个实例分享一下如何通过Lab 和 APP_wqb 协同，找到答案。 原始信号模版及表现：  ts_zscore(<compare/>(<oth455_data_1/>,...",
+  "post_body": "概述：\n找到某个信号后下一步该怎么操作，是个经常遇到的问题。下面结合一个实例分享一下如何通过Lab 和 APP_wqb 协同，找到答案。\n原始信号模版及表现：\nts_zscore(<compare/>(<oth455_data_1/>, <oth455_data_2/>), 252)\n1. Lab 里观察数据特征\n可以清晰地看到，数据在不同时间段表现出完全不同的“\n状态\n”。以其中一个 Instrument 为例：\n2015年至2017年底: 信号呈现出非常平滑、规律的缓跌趋势。它的波动很小。\n2018年前后: 信号突然变得剧烈震荡、毫无规律。它的值在短期内上下跳动，表现出极大的不确定性。\n2018年中之后: 信号进入了一个新的、相对平稳的平台期。\n尽管 ts_zscore 做了标准化，然而，z-score值仍然可能表现出显著的波动性。极端值仍然可能不成比例地影响夏普比率的计算。\n2. 把表达式以及这个数据特征输入 App\n得到带排名的建议，找到其中一个如下：\n“Applying ts_entropy after ts_zscore(<compare/>(<oth455_data_1/>, <oth455_data_2/>), 252) could meaningfully improve the Sharpe ratio, but the effectiveness depends heavily on the underlying data characteristics. The current expression calculates a z-score of the difference between two principal components (PCA factors) over a 252-day window. This aims to identify periods of unusual deviations in the relationship between these factors. However, it doesn't directly capture the volatility or predictability of these deviations. This is where ts_entropy can add value. By applying ts_entropy to the output of the ts_zscore calculation, we obtain a measure of the randomness or predictability of the z-score time series. A high entropy value suggests a more unpredictable, noisy signal, while a low entropy value suggests a more predictable, potentially trend-following signal. How it improves the strategy: Risk Management: High entropy periods indicate greater uncertainty. During these periods, we can reduce position size or even exit trades entirely, thus mitigating potential losses from unpredictable market movements. This directly contributes to improving the Sharpe ratio by lowering the denominator (risk). Signal Enhancement: Low entropy periods suggest a more predictable pattern in the z-score. This could indicate a stronger, more reliable signal for trading. We can increase position sizes or enter new trades with higher confidence during these periods, potentially increasing returns (numerator of Sharpe ratio). * Synergistic Effect: The combination leverages the strength of both operators. ts_zscore identifies potential trading opportunities based on deviations from the norm, while ts_entropy provides a measure of the reliability of those signals. This allows for dynamic risk management and signal weighting, leading to a more robust and potentially higher Sharpe ratio strategy. Example: Suppose the ts_zscore output shows a consistently high value for several days. A simple strategy based solely on this might lead to large losses if the market suddenly reverses. However, if the ts_entropy of this z-score time series is also high, it suggests this high value is part of a noisy, unpredictable period. The combined strategy would then signal caution, potentially preventing significant losses. Conversely, a consistently low z-score with low entropy would suggest a strong, persistent trend, justifying a more aggressive trading strategy. Limitations: The effectiveness depends on the data. If the z-score time series is inherently random, ts_entropy might not add much value. The choice of the d parameter (number of past days for entropy calculation) in ts_entropy is crucial and requires careful optimization. Overfitting is a potential concern. Despite these limitations, the potential for improved risk management and signal enhancement makes this a good addition, hence the score of 6.”\n将上面的内容再问一下大模型，得到一个总结：\n“该策略的核心思想是，使用\nts_entropy\n(信息熵) 作为一种**“信号可靠性”的衡量指标**，来动态地调整基于\nts_zscore\n信号的交易行为。\n它本身不产生买卖信号，而是像一个“天气预报系统”，告诉我们当前\nts_zscore\n信号所处的环境是“晴朗可预测”还是“风雨交加、充满不确定性”。”\n这一点和 Lab 中观察到的特征比较吻合。回测看看结果。\n3. 回测结果：\n有提升，说明图中的数据特征（状态切换）是“问题”，而\nts_entropy\n算子是解决这个问题的“工具”。",
+  "post_comments": [
+    "<compare/>(<oth455_data_1/>, <oth455_data_2/>), 这里的compare是指什么，",
+    "JG91554\n基本的加减乘除。重点还是其背后的意义。",
+    "这个帖子我非常喜欢，",
+    "是我没有这个operator的权限吗？",
+    "请问APP_wqb中在哪里找到这个界面（quant reseach target)",
+    "DH36161\n应该是。APP_wqb 会在有权限的里面进行推荐。",
+    "WY25891\nInspiration House",
+    "居然成了lab的导论了，好。",
+    "ts_entropy , to_nan都没权限，咋整？",
+    "请问app_wqb能不能发我一份，\n956629514@qq.com\n，非常感谢",
+    "太棒了",
+    "数据的异常波动还可能与当时的金融市场有关",
+    "请问app_wqb能不能发我一份，\ncwang_2020@163.com\n，非常感谢",
+    "YL20168\nAW52508\n安装最近培训 MCP 时的包里有最新版的 APP，在\n~/site-packages/cnhkmcp/untracked/APP\n目录下。",
+    "app_wqb帮忙分享我一下，\nyujilong_163163@163.com\n。谢谢",
+    "这篇文章写的好，学习了！",
+    "It is  very goog",
+    "请问app_wqb能不能发我一份，\neexzy@hotmail.com\n, 非常感谢!!",
+    "这里的\n<oth455_data_1/>, <oth455_data_2/>是什么，same-data\n吗还是什么，但该说不说你的这个工作流确实是不错的，有很多我可以去学习和借鉴的地方，这个模板好像在Alpha模板征文也有。\n====================================================================================",
+    "感谢分享",
+    "请问app_wqb能发我一份么，非常感谢！我的邮箱是\nfoxmeder@outlook.com"
+  ]
+}

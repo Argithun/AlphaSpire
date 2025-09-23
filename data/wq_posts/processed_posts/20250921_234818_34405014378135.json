@@ -1,0 +1,24 @@
+{
+  "title": "增加vf的一个技巧 0.04->0.65->0.95, 提交前先计算“综合得分”",
+  "description": "原来vf一直升不上去，最高都不到0.5，在vf0.04的时候通过Weijie老师提升vf一对一的指导，从0.04升到0.65，这次提升到0.95. 主要的思路是对提交的alpha数组进行排序。由于os与sharpe, fitness, margin,...",
+  "post_body": "原来vf一直升不上去，最高都不到0.5，在vf0.04的时候通过Weijie老师提升vf一对一的指导，从0.04升到0.65，这次提升到0.95.\n主要的思路是对提交的alpha数组进行排序。由于os与sharpe, fitness, margin, returns正相关，与turnover负相关，所以我们可以得到一个与os正相关的综合得分，\n做得细致的同学还可以计算每一列里面的方差，越小也是越稳定。\n最后根据综合得分，对要提交的alpha进行综合得分降序排序。 先从排序最高的alpha开始提交。例如：有100个可以提交的alpha,可以提交综合得分前10位的alpha.\n以下是相关的函数，仅供参考。\ndef calculate_composite_score(arr):\n\"\"\"\n计算综合得分，考虑各字段与 os 的关系\n:param arr: 输入的数组，包含 sharpe, turnover, fitness, margin, returns\n:return: 综合得分\n\"\"\"\nsharpe, turnover, fitness, margin, returns = arr[:, 2], arr[:, 3], arr[:, 4], arr[:, 5], arr[:, 10]\n# 归一化处理\nsharpe_norm = (sharpe - np.min(sharpe)) / (np.max(sharpe) - np.min(sharpe))\nturnover_norm = (turnover - np.min(turnover)) / (np.max(turnover) - np.min(turnover))\nfitness_norm = (fitness - np.min(fitness)) / (np.max(fitness) - np.min(fitness))\nmargin_norm = (margin - np.min(margin)) / (np.max(margin) - np.min(margin))\nreturns_norm = (returns - np.min(returns)) / (np.max(returns) - np.min(returns))\n# 由于 turnover 与 os 负相关，其他与 os 正相关\nreturn sharpe_norm - turnover_norm + fitness_norm + margin_norm + returns_norm\ndef sort_by_composite_score(arr):\n\"\"\"\n根据综合得分对数组进行降序排序\n:param arr: 输入的数组\n:return: 排序后的数组\n\"\"\"\ncomposite_score = calculate_composite_score(arr)\nsorted_indices = np.argsort(composite_score)[::-1]\n# 将综合得分添加到原数组的最后一列\narr_with_score = np.column_stack((arr, composite_score))\nreturn arr_with_score[sorted_indices]\ndef sort_alpha_by_composite_score(arr):\nalphas = np.array([sublist[:11] for sublist in arr], dtype=object)\nreturn sort_by_composite_score(alphas)",
+  "post_comments": [
+    "感谢大佬，很实用工具",
+    "这个输入的数组是已提交的alpha的相关信息吗",
+    "这个好呀，我试试，感谢大佬，祝大佬VF1.0",
+    "很赞的一种方案，是要去除pc之后的排名吧。",
+    "======================================MY27687=======================================\n谢谢大佬分享，这样更能分析出哪些alpha的的综合得分，即使是同一个数据集也可以通过赋分赛选出最好的那一个，对vf更有提升，再次感谢大佬分享，祝大佬vf高高，base多多！！！\n====================================================================================",
+    "大佬你计算完这个综合得分，还要结合performance表现看嘛^^",
+    "首先，谢谢同学们的过奖和祝愿，以及同学提到新的思路。\n没有找到单独回复的按钮，所以统一回复一下同学们的问题：\n1. 这是可以（准备）提交的Alpha组。\n2. 假设这个Alpha组已经过滤了厂型或者其他短时间（例如只有3/4年数据）的alpha。\n3. 由于我在“坐牢“期间（vf0.04），提交pc相关性低的Alpha一天的Base payment也只有$1.03，首要的任务是提高os，所以没有关注sc和pc。\n4. 还没有考虑performance，一个很好的建议。",
+    "我感觉在这里什么方法都能找到。……——^_^",
+    "====================================\n谢谢大佬分享，这个感觉又是一个新的思路，当有好几个可以提交的时候，用这个方法就可以判断出来应该先提交哪个了，后续尝试一下，谢谢大佬的代码和思路！！！\n=====================================",
+    "由于 turnover 与 os 负相关，其他与 os 正相关，这个工式好用，mark一个试试\nsharpe_norm - turnover_norm + fitness_norm + margin_norm + returns_norm",
+    "请问大佬们，power pool alpha corr 过高会影响这个alpha提交后的质量吗？",
+    "因为 `fitness` 的计算公式里已经包含了 `sharpe`, `returns`, `turnover`，所以感觉这个综合排序的结果总是约等于按照 `fitness` 排序的结果。是否可以认为这几个指标里面最重要的还是 `fitness`，因为这个指标最全面",
+    "@\nQL33636\n这个“综合得分”是与os相关的，你能看到的fitness是IS的。",
+    "综合得分里各指标权重是凭经验设定的，这样做你是怎么避免人为偏差的。否则排序结果可能并不是对os最优的。\n====================================================================================",
+    "JB71859\n对的，os的计算是黑盒，排序结果可能不是对os最优的，但是正相关的。所以，这是一种尝试，实际效果对我是有益的。",
+    "全自动还是会有风险的，因为会有edge case穿透的问题，比如有些“厂”字alpha，2021年前缺失数据alpha，这些提交会给OS带来不可预知的风险。",
+    "@\nOS40510\n,对的，建议在过滤“厂”字或者“高危”alpha（例如只有3/4年的数据等等）后，再使用。上面也有提到过“2. 假设这个Alpha组已经过滤了厂型或者其他短时间（例如只有3/4年数据）的alpha。”"
+  ]
+}

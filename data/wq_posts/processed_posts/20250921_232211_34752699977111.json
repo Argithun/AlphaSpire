@@ -1,0 +1,9 @@
+{
+  "title": "[BRAIN LAB实战]记录一次借助Labs优化GLB alpha的过程",
+  "description": "首先这个alpha的来源，是参考了老虎哥的这个帖子 ： ➡️ 使用MCP来帮助自己手搓Alpha       感谢老虎哥的分享！     ...",
+  "post_body": "首先这个alpha的来源，是参考了老虎哥的这个帖子 ： ➡️\n使用MCP来帮助自己手搓Alpha\n感谢老虎哥的分享！\n想点下earnings数据集，先看了下数据集的字段，发现直接用machine_lib套一二阶，可能不太行，群里咨询了下小伙伴，有热心的小伙伴提示可以参考下这篇帖子。万分感谢！\n看了这篇帖子后，我直接原表达式在GLB ，ASI ,EUR回测了下，发现，ASI地区指标ok，但是robust指标 FAIL了，而且robust指标距离pass 的值还是挺大的，就先放弃了。EUR基本没有信号，而GLB地区的，信号还是挺强的，如下：\n接下来是尝试优化指标\n# 1. 修改了下neu 为country后，达到ppa的指标（prod 相关性0.9+），如下，但是三条pnl线中，EMEA 线偏离比较大，sharpe -0.35\n# 2. 初步尝试了下修改settings参数和 操作符参数，没有改善。考虑到这条线明显和其他pnl线偏离比较多，怀疑是不是异常值导致的，于是我去lab看了下数据的一些可视化指标，发现，关于最高覆盖率 top5的股票，有一个明显和其他值差距过大的，如下：\n# 3.  于是想着，是不是排除掉一些明显偏离其他值过大的股票看看\n通过if_else 判断小于-512，-252，-120 ...  时，设置值为nan，过滤掉这些值后，再进行其他操作符处理；\n经过测试，发现当过滤掉大于-150时，is指标比较好,如下：\n优化前后的指标对比：\n# 4. 优化后，turnover比较低了，考虑到之前老师说过，turnover过低的alpha，并不好，且lab中显示，该字段的turnover基本有10%左右，于是想着看看能不能提升下turnover\n参考了下面的这篇帖子的思路，\n感谢QX52484 小伙伴的分享！\n如何利用tvr操作符与alpha起舞\n利用ts_target_tvr_decay(x, lambda_min=0, lambda_max=1, target_tvr=0.1) 操作符将\nturnover从 1.17% 提高到了4.66%\n（参数设置为lambda_min=0, lambda_max=1, target_tvr=0.1）\n以及8.14%\n（参数设置为lambda_min=0, lambda_max=5, target_tvr=0.1），同时\nsharpe指标和fitness，returns都得到了显著的提升\n，而且\nprod corr从0.9009下降到了0.7655\n！真是令人惊喜的意外啊（感谢小伙伴在论坛分享的各种帖子！）\n参数设置为\nlambda_min=0, lambda_max=1, target_tvr=0.1\n的 alpha指标如下：\n参数设置为\nlambda_min=0, lambda_max=5, target_tvr=0.1 的alpha图如下：\n到此，alpha优化结束。\n（可能你会问，我咋提交了turnover较低的那个alpha，只能说：指标过于相似导致我复制错alpha_id了！我发现的时候，程序还在提交，赶紧去页面把description 去掉了，想让服务器提交失败，结果晚了，10几秒就交上去了...... 😭😭😭 ）",
+  "post_comments": [
+    "膜橘子姐🍊🍊🍊！很有启发性的worldquantLab实战分享，作为一个还在摸索中的小gold，虽然有些操作细节看不太懂，但您的整个优化思路让我学到了一些东西\n了解alpha数据\n：看到Robust指标fail没有直接放弃，而是通过数据可视化精准定位到异常值问题，这个思路真的值得学习；\n操作符优化alpha\n：用if_else过滤极端值操作，看到优化前后对比图的时候我有些惊讶，效果也非常不错；\n小gold思考\n：考虑到turnover过低的问题，用ts_target_tvr_decay操作符来调节，最终各项指标全面提升，看来这个操作符值得小gold好好学习一下！\n最后提交错版本太真实了😂 ，小gold也时有发生这种情况。",
+    "哈哈，最后一段太逗了^_^"
+  ]
+}

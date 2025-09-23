@@ -1,0 +1,12 @@
+{
+  "title": "vscode集成mcp的完整实施步骤笔记",
+  "description": "第一步：vscode下载安装，安装部分略            下载地址：code.visualstudio.com/Download  第二步：cnhkmcp库的安装            pip install cnhkmcp         ...",
+  "post_body": "第一步：vscode下载安装，安装部分略\n下载地址：code.visualstudio.com/Download\n第二步：cnhkmcp库的安装\npip install cnhkmcp\n可能出现错误，python版本不匹配，安装这个库需要python3.10以上\n第三步：Gemini API申请\n登录地址aistudio.google.com，账号注册：略\nkey申请\n第四步：打开vscode\n安装ROO codeJ借鉴MG88592大佬写的（如何在VSCODE上安装我发现的MCP？傻瓜式教程来了）帖子\n第五步.模型设置\n第六步：mcp设置\n配置文件如下（文件路径根据实际更改，目前只需要这一个配置即可）：\n{\n\"mcpServers\": {\n\"worldquant-brain-platform\": {\n\"command\": \"C:\n\\\nUsers\n\\\nmysky\n\\\nAppData\n\\\nLocal\n\\\nPrograms\n\\\nPython\n\\\nPython313\n\\\npython.exe\",\n\"args\": [\n\"C:\n\\\nUsers\n\\\nmysky\n\\\nAppData\n\\\nLocal\n\\\nPrograms\n\\\nPython\n\\\nPython313\n\\\nLib\n\\\nsite-packages\n\\\ncnhkmcp\n\\\nuntracked\n\\\nplatform_functions.py\"\n],\n\"description\": \"WorldQuant BRAIN Platform Mcp Server - Comprehensive trading platform integration with simulation managementalpha operations, and authentication. Credentials are stored inuser config.json in the same directory. Provides tools for creatingsimulations, checking status, managing alphas, and accessing platform features.\",\n}\n}\n}\n安装完成后的正常状态：\n第七步：设置promt\n具体设置如下：\nRole Definition：\nYou are Roo, a WoridQuant BRAlN platform expert alko kmown as a BRAlN Consultant. Your expertise is buit on thre pilars:Strategic Portfolio Management, Quality-foausedeseaich and patom Masten, You ude uses to become too te consulants bv empsna the ceation ofdversed. rohust and economicaly sound aipha cotfolos youkmowiedge coves the BRAlN AP, advanced alpha development techniques,consutant compensation stnuctures, and the strategic use of platform features like the RAlN pyramidand Genius Program to madmize long-term success.\nWhen to Use (optional)：\nUse this mode when you need to develop Alphas, understand the BRAlN platform, or get advice on being a sucessful consultant. This mode\nto Alpha development, APi usage, and understanding the BRAiN ecosystem.\n第八步，进行mcp测试（可以正常调用mcp服务并正常反馈结果即为配置成功）",
+  "post_comments": [
+    "感谢分享，搞了好几天了，总是不能成功也不知道问题在哪里，这篇帖子对我帮助很大",
+    "感谢大佬分享，全靠这个帖子，mcp开始用起来了",
+    "谢谢，很全面，讲得很详细，还有图片对照，对我这种才入手的人帮助很大",
+    "Gemini 生成上下文流错误：got status: 429 Too Many Requests.\n大佬，配置完了，一对话就这样，要怎么办啊？",
+    "Gemini 只是我配置的一个例子，因为这个需要外网环境，你可以根据实际情况配置国内的大模型的key，或是通过配置魔塔社区的key可以进行大模型调用"
+  ]
+}
