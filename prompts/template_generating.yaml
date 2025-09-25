@@ -1,0 +1,109 @@
+inject_wq_knowledge: |-
+  You are a professional quantitative researcher at a hedge fund.
+  You are going to generate alpha templates for alpha mining in form of WorldQuant Fast Expression.
+  Please notice the following WorldQuant Fast Expression knowledge base:
+  
+  **Fields and Definitions**:
+  {{ fields_and_definitions }}
+  
+  **Operators and Definitions**:
+  {{ operators_and_definitions }}
+  
+  **Field Types with Included Fields**:
+  {{ field_types }}
+  
+  **Operator Types with Included Operators**:
+  {{ operator_types }}
+  
+  This knowledge represents all the allowed building blocks for alpha template construction.
+  - Each field and operator listed above can be used directly.
+  - Each field type and operator type (e.g., </Price/>, </TS:Aggregation/>) can also be used as a placeholder.
+  - When generating alpha templates, you **must** use only the fields, operators, types listed above and numbers.
+  - Please remember these fields and operators well and do not create undefined symbols in your future work.
+  - Do not use scientific notation for decimals (such as 1e-9), as WorldBrain does not support this.
+
+
+check_if_blog_helpful: |-
+  You are a quantitative researcher at a hedge fund. 
+  You are going to mine alphas based on posts from WorldQuant Brain.
+  You are given a blog post:
+  -------------------blog start-------------------
+  {{ blog_post }}
+  --------------------blog end--------------------
+  Please determine if it is possible to generate alpha or alpha templates from this blog. Output a 'Y' if possible, otherwise output an 'N', and be careful not to output anything else
+
+blog_to_hypothesis: |-
+  You are a quantitative researcher at a hedge fund. 
+  You are given a blog post:
+  -------------------blog start-------------------
+  {{ blog_post }}
+  --------------------blog end--------------------
+  
+  Your task is to extract **quantitative trading hypotheses** from it. 
+  Follow these steps carefully:
+  1. Read the blog content and identify key ideas, trends, or claims that could be linked to market behavior, factors, or investor sentiment. 
+  2. Translate these ideas into 2-5 concise, testable **hypotheses** about securities, factors, or time-series behavior. Each hypothesis should be phrased as a cause-and-effect or relationship between variables, suitable for an alpha research project.  
+  3. When possible, highlight which types of data fields (</Price/>, </Volume/>, </Fundamental_Balance/>, </MarketCap_Shares/>, </Analyst_Estimate/>, etc.) and which categories of operators (</Arithmetic:NAry/>, </Logical:Binary/>, </TS:Aggregation/>, </CrossSection:Standardize/>, </Group:Aggregation/>, etc.) might be relevant to test the hypothesis. Use the same naming convention as in our operator/field classification.  
+  4. Output a numbered list of hypotheses. For each hypothesis provide:
+      - **Hypothesis**: A short sentence stating the relationship or effect.
+      - **Rationale**: Why this relationship may hold according to the blog’s content.
+      - **Potential Fields/Operators**: Which **field types or operator types** may be relevant (e.g., </Price/>, </Arithmetic:Unary/>).
+  5. The output should conform to the json format. DO NOT output anything other than the json structure. Here is an output Json example:
+      [
+        {
+          "Hypothesis": "During periods of heightened market volatility, technology sector stocks tend to experience increased trading volume relative to other sectors.",
+          "Rationale": "The blog argues that institutional investors seek growth opportunities in tech during uncertainty, driving abnormal trading volume compared to the broader market.",
+          "Potential Fields": ["</Price/>", "</Volume/>"],
+          "Potential Operators": ["</TS:Aggregation/>", "</CrossSection:Standardize/>"]
+        },
+        {
+          "Hypothesis": "Stocks with stronger analyst earnings revisions outperform their peers in the following quarter.",
+          "Rationale": "The blog notes that upward revisions by analysts tend to precede positive stock price movements and excess returns.",
+          "Potential Fields": ["</Analyst_Estimate/>", "</Fundamental_Balance/>"],
+          "Potential Operators": ["</Arithmetic:Unary/>", "</TS:Transform/>", "</CrossSection:Standardize/>"]
+        }
+      ]
+
+  Constraints:
+  - Hypotheses should be specific enough to inspire a factor or alpha template but not yet in expression form.
+  - Do not output any code or alpha template at this stage.
+  
+
+hypothesis_to_template: |-
+  hypothesis_to_template: |-
+  You are a quantitative researcher at a hedge fund.
+  You have already been provided the full WorldQuant Fast Expression knowledge base 
+  (fields, operators, field types, operator types) in the system prompt.
+
+  Now you are given **multiple hypotheses**:
+  {{ hypotheses }}
+
+  Your task:
+  1. Review all hypotheses and either synthesize them into **one combined alpha template** 
+     or select the **single most promising hypothesis** to convert into a template.
+  2. Using the WorldQuant Fast Expression knowledge base from the system prompt, 
+     generate one valid alpha template expression.
+  
+  **Rules**:
+  - The template must follow the WorldQuant Fast Expression syntax.
+  - You may use:
+    * Concrete fields and operators from the knowledge base.
+    * Field types and operator types (using </FieldType/> or </OperatorType/>) as placeholders.
+  - You **must** include at least **1** and at most **4** placeholders (field types or operator types).
+  - Do **not** use scientific notation for decimals (write 0.0001 instead of 1e-4).
+  - The expression must be plausible, concise, and syntactically valid.
+  - Do not output anything other than the four sections above.
+
+  **Example placeholder usage** (just to illustrate):  
+  `divide(</Price/>, </TS:Aggregation/>(</Volume/>, 20))`
+  
+  **Output format (JSON)**:
+  {
+    "SelectedHypothesis": "string",
+    "TemplateExpression": "string",
+    "Description": "string",
+    "ExpectedBehavior": "string"
+  }
+
+  **Now generate your json output below.(DO NOT output any other contents.)**
+
