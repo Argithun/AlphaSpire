@@ -33,7 +33,7 @@ check_if_blog_helpful: |-
   Please determine if it is possible to generate alpha or alpha templates from this blog. Output a 'Y' if possible, otherwise output an 'N', and be careful not to output anything else
 
 blog_to_hypothesis: |-
-  You are a quantitative researcher at a hedge fund. 
+  Now you are a quantitative researcher at a hedge fund. 
   You are given a blog post:
   -------------------blog start-------------------
   {{ blog_post }}
@@ -67,13 +67,20 @@ blog_to_hypothesis: |-
   Constraints:
   - Hypotheses should be specific enough to inspire a factor or alpha template but not yet in expression form.
   - Do not output any code or alpha template at this stage.
+  - Do not output any comments within the json structure
   
 
 hypothesis_to_template: |-
-  hypothesis_to_template: |-
   You are a quantitative researcher at a hedge fund.
   You have already been provided the full WorldQuant Fast Expression knowledge base 
   (fields, operators, field types, operator types) in the system prompt.
+  To make it clear what "type" includes, we reiterate the operator types and field types in the knowledge base, as well as the specific operators and fields they contain：
+  **Field Types with Included Fields**:
+  {{ field_types }}
+  
+  **Operator Types with Included Operators**:
+  {{ operator_types }}
+
 
   Now you are given **multiple hypotheses**:
   {{ hypotheses }}
@@ -84,19 +91,6 @@ hypothesis_to_template: |-
   2. Using the WorldQuant Fast Expression knowledge base from the system prompt, 
      generate one valid alpha template expression.
   
-  **Rules**:
-  - The template must follow the WorldQuant Fast Expression syntax.
-  - You may use:
-    * Concrete fields and operators from the knowledge base.
-    * Field types and operator types (using </FieldType/> or </OperatorType/>) as placeholders.
-  - You **must** include at least **1** and at most **4** placeholders (field types or operator types).
-  - Do **not** use scientific notation for decimals (write 0.0001 instead of 1e-4).
-  - The expression must be plausible, concise, and syntactically valid.
-  - Do not output anything other than the four sections above.
-
-  **Example placeholder usage** (just to illustrate):  
-  `divide(</Price/>, </TS:Aggregation/>(</Volume/>, 20))`
-  
   **Output format (JSON)**:
   {
     "SelectedHypothesis": "string",
@@ -104,6 +98,38 @@ hypothesis_to_template: |-
     "Description": "string",
     "ExpectedBehavior": "string"
   }
-
+  
+  **IMPORTANT**:
+  - You MUST include **between 1 and 4 field/operator types** (placeholders like </Price/> or </TS:Aggregation/>) in the final template expression.
+  - Templates **without placeholders** are invalid and must not be produced.
+  - Prefer using types over concrete fields/operators whenever possible.
+  
+  **Rules**:
+  - The template must follow the WorldQuant Fast Expression syntax.
+  - You may use:
+    * Concrete fields and operators from the knowledge base.
+    * Field types and operator types from the knowledge base.
+    * Field types and operator types from the hypotheses' "Potential Fields" and "Potential Fields".
+  - You **must** include at least **1** and at most **4** types(field types or operator types) in template expression.
+    - Do **not** generate an alpha without using types!!!
+  - Do **not** use scientific notation for decimals (write 0.0001 instead of 1e-4).
+  - The expression must be plausible, concise, and syntactically valid.
+  - Do **not** output any comments within the json structure
+  
+  **Good Placeholder Examples** (just to illustrate):
+  - ts_rank(</Price/>, 20)
+  - divide(</Volume/>, </TS:Aggregation/>(</Price/>, 10))
+  - </CrossSection:Standardize/>(</Fundamental_Balance/>)
+  
+  **Output Example** (just to illustrate, do not rely on it): 
+  ```
+  {
+    "SelectedHypothesis": "Alpha signals with very low turnover (below 5%) can be transformed into more useful signals by applying ts_target_tvr_decay with expanded lambda_max parameter to increase turnover towards optimal target ranges.",
+    "TemplateExpression": "</TS:Transform/>(ts_delta(</Price/>, 5), 0, 5, 0.15)",
+    "Description": "Applies TS:Transform optimization to a simple 5-day price momentum signal to normalize turnover towards 15% target",
+    "ExpectedBehavior": "The expression will adaptively adjust the decay parameter to bring the turnover of the underlying momentum signal closer to the target 15% level, making low-turnover signals more viable while preserving the core alpha signal"
+  }
+  ```
+    
   **Now generate your json output below.(DO NOT output any other contents.)**
 

@@ -4,6 +4,8 @@ import pandas as pd
 import yaml
 from pathlib import Path
 
+from utils.text_dealer import truncate_text
+
 # --- 路径 ---
 BASE_DIR = Path(__file__).resolve().parents[1]
 PROMPT_FILE = BASE_DIR / "prompts" / "template_generating.yaml"
@@ -95,7 +97,7 @@ def build_check_if_blog_helpful(blog_json_path: str):
             post_text += f"[{i}] {c}\n"
 
     # 4. 替换模板
-    prompt_filled = template_str.replace("{{ blog_post }}", post_text)
+    prompt_filled = template_str.replace("{{ blog_post }}", truncate_text(post_text))
 
     return prompt_filled
 
@@ -124,7 +126,7 @@ def build_blog_to_hypothesis(blog_json_path: str):
             post_text += f"[{i}] {c}\n"
 
     # 4. 替换模板
-    prompt_filled = template_str.replace("{{ blog_post }}", post_text)
+    prompt_filled = template_str.replace("{{ blog_post }}", truncate_text(post_text))
 
     return prompt_filled
 
@@ -149,8 +151,40 @@ def build_hypothesis_to_template(hypotheses_json_path: str):
     #   - 保持原始缩进，使LLM直接看到标准JSON
     hypotheses_str = json.dumps(hypotheses_data, indent=2, ensure_ascii=False)
 
+    # 读取字段文件
+    fields_df = pd.read_csv(FIELDS_FILE)
+    field_types_map = {}
+
+    for _, row in fields_df.iterrows():
+        field_types_map.setdefault(row['final_category'], []).append(row['id'])
+
+    # 读取操作符文件
+    ops_df = pd.read_csv(OPERATORS_FILE)
+    op_types_map = {}
+
+    for _, row in ops_df.iterrows():
+        op_types_map.setdefault(row['type'], []).append(row['name'])
+
+    # Field Types
+    field_types_str = []
+    for ftype, fields in field_types_map.items():
+        field_types_str.append(f"- **</{ftype}/>**: {', '.join(fields)}")
+    field_types = "\n".join(field_types_str)
+
+    # Operator Types
+    op_types_str = []
+    for otype, ops in op_types_map.items():
+        op_types_str.append(f"- **</{otype}/>**: {', '.join(ops)}")
+    operator_types = "\n".join(op_types_str)
+
     # 4. 替换模板
-    prompt_filled = template_str.replace("{{ hypotheses }}", hypotheses_str)
+    prompt_filled = (template_str
+                     .replace("{{ hypotheses }}", hypotheses_str)
+                     .replace("{{ field_types }}", field_types)
+                     .replace("{{ operator_types }}", operator_types)
+                     )
+
+    print(prompt_filled)
 
     return prompt_filled
 
