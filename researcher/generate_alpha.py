@@ -11,6 +11,9 @@ FIELDS_FILE = BASE_DIR / "data" / "wq_template_fields" / "template_fields.csv"
 ALPHA_DB = BASE_DIR / "data" / "alpha_db" / "all_alphas"
 ALPHA_DB.mkdir(parents=True, exist_ok=True)
 
+# === 最大单次生成 alpha 数量限制 ===
+MAX_ALPHAS = 100000
+
 
 def load_operator_type_map():
     """读取 template_operators.csv，返回 {type: [name,...]}"""
@@ -57,7 +60,17 @@ def generate_alphas_from_template(template_path):
     # === 提取占位符 ===
     placeholders = extract_placeholders(template_expr)
     if not placeholders:
-        raise ValueError("❌ 模板中未发现占位符，无法展开")
+        print("❌ 模板中未发现占位符，无法展开；直接使用 template 作为 alpha")
+        all_alphas = []
+        all_alphas.append({"alpha": template_expr, "fields_or_ops_used": []})
+        out_file = ALPHA_DB / f"{template_name}_alphas.json"
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump({
+                "Template": template_expr,
+                "GeneratedAlphas": all_alphas
+            }, f, indent=2, ensure_ascii=False)
+        print(f"✅ Generated 1 alphas saved to {out_file}")
+        return out_file
 
     # === 为每个占位符构建替代列表 ===
     replacements_list = []
@@ -68,10 +81,19 @@ def generate_alphas_from_template(template_path):
         elif ph in field_map:
             replacements_list.append(field_map[ph])
         else:
-            raise ValueError(f"❌ 未在字段或操作符映射中找到占位符类型: {ph}")
+            print(f"❌ 未在字段或操作符映射中找到占位符类型: {ph}")
+            return None
 
     # === 笛卡尔积替换 ===
     all_alphas = []
+    count = 0
+    total_combinations = 1
+    for lst in replacements_list:
+        total_combinations *= len(lst)
+    if total_combinations > MAX_ALPHAS:
+        print(f"⚠️ Warning: Total possible alphas {total_combinations} exceeds MAX_ALPHAS={MAX_ALPHAS}. "
+              f"Only generating the first {MAX_ALPHAS} combinations.")
+
     for combo in product(*replacements_list):
         expr = template_expr
         # 依次替换占位符
@@ -81,6 +103,9 @@ def generate_alphas_from_template(template_path):
             "alpha": expr,
             "fields_or_ops_used": combo
         })
+        count += 1
+        if count >= MAX_ALPHAS:  # 超过限制提前退出
+            break
 
     # === 保存 ===
     out_file = ALPHA_DB / f"{template_name}_alphas.json"

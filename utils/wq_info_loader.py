@@ -44,7 +44,8 @@ class OpAndFeature:
             logging.info(f"Fields CSV already exists at {FIELDS_CSV}, skipping download.")
             return pd.read_csv(FIELDS_CSV).to_dict(orient='records')
 
-        datasets = ['pv1', 'fundamental6', 'analyst4', 'model16', 'news12']
+        # datasets = ['pv1', 'fundamental6', 'analyst4', 'model16', 'news12']
+        datasets = ['pv1', 'fundamental6', 'model16']
         all_fields = []
 
         base_params = {

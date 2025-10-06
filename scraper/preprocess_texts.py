@@ -3,13 +3,19 @@ import json
 import unicodedata
 from pathlib import Path
 from bs4 import BeautifulSoup
+from langchain_openai import ChatOpenAI
 from loguru import logger
+
+from researcher.construct_prompts import build_check_if_blog_helpful
+from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 RAW_DIR = BASE_DIR / "data" / "wq_posts" / "raw_posts"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
 PROCESSED_DIR = BASE_DIR / "data" / "wq_posts" / "processed_posts"
 PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+HELPFUL_DIR = BASE_DIR / "data" / "wq_posts" / "helpful_posts"
+HELPFUL_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def clean_text(text: str) -> str:
@@ -92,7 +98,43 @@ def preprocess_all_html_posts() -> None:
         processed_count += 1
         logger.info(f"Saved processed JSON to {out_file}")
 
+        if check_if_post_helpful(out_file):
+            helpful_file = HELPFUL_DIR / f"{post_id}.json"
+            with open(helpful_file, "w", encoding="utf-8") as f:
+                json.dump(post_info, f, ensure_ascii=False, indent=2)
+
     logger.info(f"Total processed new files: {processed_count}")
+
+
+def check_if_post_helpful(post_file):
+    base_url = ConfigLoader.get("openai_base_url")
+    api_key = ConfigLoader.get("openai_api_key")
+    model_name = ConfigLoader.get("openai_model_name")
+
+    llm = ChatOpenAI(
+        base_url=base_url,
+        api_key=api_key,
+        model=model_name,
+        temperature=0.2,
+    )
+    formatted = build_check_if_blog_helpful(post_file)
+
+    try:
+        resp = llm.invoke(formatted)
+        if hasattr(resp, "content"):
+            answer = resp.content.strip()
+        else:
+            answer = str(resp).strip()
+
+        print(f"🔎 Model output for if {post_file} helpful: {answer}")
+
+        if answer.upper().startswith("Y"):
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(f"⚠️ check_if_post_helpful error: {e}")
+        return False
 
 
 if __name__ == "__main__":

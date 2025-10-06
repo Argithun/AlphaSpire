@@ -184,8 +184,6 @@ def build_hypothesis_to_template(hypotheses_json_path: str):
                      .replace("{{ operator_types }}", operator_types)
                      )
 
-    print(prompt_filled)
-
     return prompt_filled
 
 

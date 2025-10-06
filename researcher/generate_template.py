@@ -15,7 +15,7 @@ from utils.json_dealer import extract_json
 
 # --- 路径 ---
 BASE_DIR = Path(__file__).resolve().parents[1]
-POSTS_DIR = BASE_DIR / "data" / "wq_posts" / "processed_posts"
+POSTS_DIR = BASE_DIR / "data" / "wq_posts" / "helpful_posts"
 HYPOTHESIS_DB = BASE_DIR / "data" / "hypothesis_db"
 TEMPLATE_DB = BASE_DIR / "data" / "template_db"
 PROMPT_FILE = BASE_DIR / "prompts" / "template_generating.yaml"
@@ -63,16 +63,26 @@ def select_valid_post(chain):
     if not post_files:
         raise FileNotFoundError("❌ No blog post found in processed_posts folder")
 
-    while True:
-        post_file = random.choice(post_files)
-        formatted = build_check_if_blog_helpful(post_file)
-        output = chain.run(input=formatted).strip()
+    # while True:
+    #     post_file = random.choice(post_files)
+    #     formatted = build_check_if_blog_helpful(post_file)
+    #     output = chain.run(input=formatted).strip()
+    #
+    #     if output == "Y":
+    #         print(f"✅ Selected blog post: {post_file}")
+    #         return post_file
+    #     else:
+    #         print(f"⚠️ Skipping blog post: {post_file} (not helpful)")
+    return random.choice(post_files)
 
-        if output == "Y":
-            print(f"✅ Selected blog post: {post_file}")
-            return post_file
-        else:
-            print(f"⚠️ Skipping blog post: {post_file} (not helpful)")
+
+def check_if_post_helpful(chain, post_file):
+    formatted = build_check_if_blog_helpful(post_file)
+    output = chain.run(input=formatted).strip()
+    if output.upper().startswith("Y"):
+        return True
+    else:
+        return False
 
 
 # === 生成 Hypotheses ===
@@ -101,7 +111,8 @@ def generate_template(chain, hypotheses_file):
     try:
         template_json = extract_json(output)
     except Exception:
-        raise ValueError(f"❌ Template output not valid JSON: {output}")
+        print(f"❌ Template output not valid JSON: {output}")
+        return None
 
     out_file = TEMPLATE_DB / f"{Path(hypotheses_file).stem}_template.json"
     with open(out_file, "w", encoding="utf-8") as f:
@@ -112,13 +123,27 @@ def generate_template(chain, hypotheses_file):
 
 
 # === 主流程 ===
-def from_post_to_template():
+def from_post_to_template(post_file: str=None):
     system_prompt = build_wq_knowledge_prompt()
 
     chain = init_agent(system_prompt)
 
-    # Step 1: 随机选择有用 blog
-    blog_file = select_valid_post(chain)
+    # Step 1: 选择 blog
+    if post_file:
+        post_stem = Path(post_file).stem
+        existing_template = TEMPLATE_DB / f"{post_stem}_hypotheses_template.json"
+        if existing_template.exists():
+            print(f"✅ Template already exists for {post_file}, skipping template and alpha generation.")
+            return None
+        blog_file = post_file
+
+        # if check_if_post_helpful(chain, post_file):
+        #     blog_file = post_file
+        # else:
+        #     print(f"⚠️ Skipping blog post: {post_file} (not helpful)")
+        #     return None
+    else:
+        blog_file = select_valid_post(chain)
 
     # Step 2: 生成 Hypotheses
     hypotheses_file = generate_hypotheses(chain, blog_file)
@@ -126,7 +151,7 @@ def from_post_to_template():
     # Step 3: 生成 Template
     template_file = generate_template(chain, hypotheses_file)
 
-    print("🎯 Finished: Template generated successfully.")
+    print(f"🎯 Finished: Template generated from {blog_file} successfully.")
     return template_file
 
 
