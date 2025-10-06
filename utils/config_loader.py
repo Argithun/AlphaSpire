@@ -37,6 +37,7 @@ class ConfigLoader:
             "worldquant_account": os.getenv("WORLDQUANT_ACCOUNT", yaml_config.get("worldquant_account")),
             "worldquant_password": os.getenv("WORLDQUANT_PASSWORD", yaml_config.get("worldquant_password")),
             "worldquant_login_url": os.getenv("WORLDQUAN_LOGIN_URL", yaml_config.get("worldquant_login_url")),
+            "worldquant_api_auth": os.getenv("WORLDQUAN_API_AUTH", yaml_config.get("worldquant_api_auth")),
             "worldquant_consultant_posts_url": os.getenv("WORLDQUANT_CONSULTANT_POSTS_URL",
                                                          yaml_config.get("worldquant_consultant_posts_url")),
         }

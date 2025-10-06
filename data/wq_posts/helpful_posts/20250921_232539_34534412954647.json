@@ -1,0 +1,15 @@
+{
+  "title": "【IDEA BY TIGER】关于在ASI，如何提升JPN表现不佳的一个思路",
+  "description": "一、首先我们来看一下初始的signal及其在country维度下的pnl表现（应大群要求，这里隐去了df，因为这个不重要），我们可以看到这个初始的signal的sharp为1.35，且在JPN其表现是负的 ...",
+  "post_body": "一、首先我们来看一下初始的signal及其在country维度下的pnl表现（应大群要求，这里隐去了df，因为这个不重要），我们可以看到这个初始的signal的sharp为1.35，且在JPN其表现是负的\n二、思路：既然只有JPN表现为负，那我们是不是可以去掉它，我想到的办法是将所有公司的市值先在country里分组，也就是group_mean(cap,1,country)；再对其进行排名，也就是rank(group_mean(cap,1,country))；这个时候我们需要知道JPN在所有国家排名的中的位置，通过提问大模型，我们知道日本排在第四，如图：\n三、既然JPN排名第四，那么其在rank(group_mean(cap,1,country))的位置可能是在0.6-0.8之间；那么我们通过如下表达式，可以达到去除jpn的效果：\nsignal=s_log_1p(winsorize(ts_backfill(vec_choose(df,nth=0),22),std=4));\ngr = rank(group_mean(cap,1,country));\nif_else(or(gr>0.8,gr<0.6),signal,nan)\n优化后的表现如下，就差一点点了：\n四、再对其二阶，done",
+  "post_comments": [
+    "好思路，又学会一招",
+    "厉害啊，通过向AI咨询国别之间在ASI中的市值rank，进一步剔除目前国家，从而提升alpha，这个思路很有启发性",
+    "学习了，谢谢虎哥",
+    "很好的魔修思路，虽然不推荐常用，但是思路清晰，值得学习",
+    "很好的思路，谢谢虎哥~  感觉以后回测完都可以分国家看看表现，对于不好的国家可以进一步剔除。（虽然有点担心是否过拟合）\n====================================\nFIGHTING LABUBU!\n====================================",
+    "可以，学了一个小技巧，确实厉害，这个小技巧只有在jpn有效吗，其他的比如usa和chn呢，有尝试其他region吗",
+    "signal=s_log_1p(winsorize(ts_backfill(vec_choose(df,nth=0),22),std=4));\ngr = rank(group_mean(signal,1,country));\nif_else(gr>=0.1,signal,nan)\n可否通过这样，直接把signal表现最不佳的一个国家排除掉呢",
+    "这应该是不行的，pnl是simulate之后的结果，你这个是simulate之前\n风险是有的哦，的确不建议常用\n只有在ASI、GLB、EUR这种包含多个国家的才适用。先visual一下看看在country维度下的pnl，在这个前提下只要知道表现不好的某个国家或地区的平均市值排名，就可以试试去掉它。当然也可以只做表现最好的国家，不过我怀疑这样的话就严重过拟合了"
+  ]
+}

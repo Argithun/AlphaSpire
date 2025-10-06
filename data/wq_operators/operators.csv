@@ -1,7 +1,7 @@
 name,category,scope,definition,description,documentation,level
 add,Arithmetic,['REGULAR'],"add(x, y, filter = false), x + y","Add all inputs (at least 2 inputs required). If filter = true, filter all input NaN to 0 before adding",,ALL
 multiply,Arithmetic,['REGULAR'],"multiply(x ,y, ... , filter=false), x * y",Multiply all inputs. At least 2 inputs are required. Filter sets the NaN values to 1,/operators/multiply,ALL
-sign,Arithmetic,['REGULAR'],sign(x),if input = NaN; return NaN,,ALL
+sign,Arithmetic,['REGULAR'],sign(x),"if input > 0, return 1; if input < 0, return -1; if input = 0, return 0; if input = NaN, return NaN;",,ALL
 subtract,Arithmetic,['REGULAR'],"subtract(x, y, filter=false), x - y","x-y. If filter = true, filter all input NaN to 0 before subtracting",,ALL
 log,Arithmetic,['REGULAR'],log(x),Natural logarithm. For example: Log(high/low) uses natural logarithm of high/low ratio as stock weights.,,ALL
 max,Arithmetic,['REGULAR'],"max(x, y, ..)",Maximum value of all inputs. At least 2 inputs are required,/operators/max,ALL
