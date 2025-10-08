@@ -1,0 +1,6 @@
+id,description,dataset,category,subcategory,region,delay,universe,type,coverage,userCount,alphaCount,pyramidMultiplier,themes
+pv53_beta_vix_normalized,Beta VIX normalized,"{'id': 'pv53', 'name': 'Index Market Data'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,MATRIX,1.0,70,593,1.1,[]
+pv53_logreturns5_normalized,Normalized log returns for 5 days,"{'id': 'pv53', 'name': 'Index Market Data'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,MATRIX,1.0,51,512,1.1,[]
+pv53_usa_uber_beta_ung_125_normalized,Beta information,"{'id': 'pv53', 'name': 'Index Market Data'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,MATRIX,1.0,32,364,1.1,[]
+pv53_usa_uber_beta_uso_125_normalized,Beta information,"{'id': 'pv53', 'name': 'Index Market Data'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,MATRIX,1.0,29,359,1.1,[]
+pv53_weights,Weight information,"{'id': 'pv53', 'name': 'Index Market Data'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,MATRIX,1.0,45,402,1.1,[]

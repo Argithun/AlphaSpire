@@ -1,0 +1,6 @@
+id,description,dataset,category,subcategory,region,delay,universe,type,coverage,userCount,alphaCount,pyramidMultiplier,themes
+top1000,universe,"{'id': 'univ1', 'name': 'Universe Dataset'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,UNIVERSE,0.33,5,5,1.1,[]
+top200,universe,"{'id': 'univ1', 'name': 'Universe Dataset'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,UNIVERSE,0.07,1,5,1.1,[]
+top3000,universe,"{'id': 'univ1', 'name': 'Universe Dataset'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,UNIVERSE,1.0,17,54,1.1,[]
+top500,universe,"{'id': 'univ1', 'name': 'Universe Dataset'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,UNIVERSE,0.17,8,28,1.1,[]
+topsp500,universe,"{'id': 'univ1', 'name': 'Universe Dataset'}","{'id': 'pv', 'name': 'Price Volume'}","{'id': 'pv-price-volume', 'name': 'Price Volume'}",USA,1,TOP3000,UNIVERSE,0.22,3,3,1.1,[]

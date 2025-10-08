@@ -1,0 +1,4 @@
+id,description,dataset,category,subcategory,region,delay,universe,type,coverage,userCount,alphaCount,pyramidMultiplier,themes
+ern5_change_time,The time that change happens.,"{'id': 'earnings5', 'name': 'Earnings Date Breaks'}","{'id': 'earnings', 'name': 'Earnings'}","{'id': 'earnings-earnings-estimates', 'name': 'Earnings Estimates'}",USA,1,TOP3000,VECTOR,0.9405,45,112,1.2,[]
+ern5_fiscal_year,"This is the reporting fiscal year, relates to SEAD.","{'id': 'earnings5', 'name': 'Earnings Date Breaks'}","{'id': 'earnings', 'name': 'Earnings'}","{'id': 'earnings-earnings-estimates', 'name': 'Earnings Estimates'}",USA,1,TOP3000,VECTOR,0.9535,41,89,1.2,[]
+ern5_total_days_changed,Number of days changed,"{'id': 'earnings5', 'name': 'Earnings Date Breaks'}","{'id': 'earnings', 'name': 'Earnings'}","{'id': 'earnings-earnings-estimates', 'name': 'Earnings Estimates'}",USA,1,TOP3000,VECTOR,0.952,132,387,1.2,[]
