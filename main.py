@@ -29,16 +29,17 @@ if __name__ == "__main__":
 
 
 
-    template_file = from_post_to_template()
-    alphas_file = generate_alphas_from_template(template_file)
+    # template_file = from_post_to_template()
+    # alphas_file = generate_alphas_from_template(template_file)
 
-    # POSTS_DIR = Path("data/wq_posts/helpful_posts")
-    # for json_file in POSTS_DIR.glob("*.json"):
-    #
-    #     template_file = from_post_to_template(str(json_file))
-    #     if template_file is None:
-    #         continue
-    #     alphas_file = generate_alphas_from_template(template_file)
+
+    POSTS_DIR = Path("data/wq_posts/helpful_posts")
+    for json_file in POSTS_DIR.glob("*.json"):
+
+        template_file = from_post_to_template(str(json_file))
+        if template_file is None:
+            continue
+        alphas_file = generate_alphas_from_template(template_file)
 
     # ALPHA_DIR = Path("data/alpha_db/all_alphas")
     # for json_file in ALPHA_DIR.glob("*.json"):
