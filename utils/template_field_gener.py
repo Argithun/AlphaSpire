@@ -1,280 +1,180 @@
-"""
-scripts/annotate_fields_with_categories.py
-
-读取 data/wq_field/fields.csv（或项目根的 fields.csv），按规则把 field 归类为 final_category，
-并输出:
-  - data/wq_field/fields_typed.csv
-  - data/wq_field/fields_typed.json
-  - data/wq_field/fields_review.csv  (UNKNOWN 或 Other 的清单，供人工核对)
-
-用法:
-  pip install pandas
-  python scripts/annotate_fields_with_categories.py --in path/to/fields.csv
-
-注:
-  - 脚本会自动检测常见列名（id/name/description/dataset/type）。
-  - CATEGORY_MAP 可按需调整，优先基于 dataset 决定类；其次用字段名/描述关键词匹配。
-"""
-
-import argparse
-import csv
 import json
-from pathlib import Path
-from typing import Dict, List, Any
-import pandas as pd
-import re
+import csv
 import logging
+from pathlib import Path
+from typing import List, Dict
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from openai import OpenAI
+import hdbscan
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="'force_all_finite' was renamed to 'ensure_all_finite'",
+    category=FutureWarning,
+)
+
+from utils.config_loader import ConfigLoader
+
+BASE_DIR = Path(__file__).resolve().parents[1]
+FIELDS_DIR = BASE_DIR / "data" / "wq_fields"
+OUTPUT_DIR = BASE_DIR / "data" / "wq_template_fields"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUT_JSON = OUTPUT_DIR / "template_fields.json"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-# 输出目录
-BASE = Path(__file__).resolve().parents[1]
-FIELD_DIR = BASE / "data" / "wq_fields"
-DEFAULT_IN = FIELD_DIR / "fields.csv"
 
-TEMP_DIR = BASE / "data" / "wq_template_fields"
-TEMP_DIR.mkdir(parents=True, exist_ok=True)
-OUT_CSV = TEMP_DIR / "template_fields.csv"
-OUT_JSON = TEMP_DIR / "template_fields.json"
-REVIEW_CSV = TEMP_DIR / "review.csv"
-
-# ----- 分类配置（可编辑） -----
-# 每个类别：可包含 "datasets"（优先匹配）与 keywords（在 name/description 中匹配）
-# keywords 使用小写，做 substring 检查；也可用正则（在后面扩展）
-CATEGORY_MAP = {
-    "Price": {
-        "datasets": ["pv1"],
-        "keywords": ["close", "open", "high", "low", "vwap", "last", "price", "midprice"]
-    },
-    "Volume": {
-        "datasets": ["pv1"],
-        "keywords": ["volume", "turnover", "vol", "sharestraded", "adv", "avgvol"]
-    },
-    "Returns": {
-        "datasets": ["pv1"],
-        "keywords": ["return", "pct", "pct_change", "ret", "logreturn", "return_"]
-    },
-    "MarketCap_Shares": {
-        "datasets": ["pv1", "fundamental6"],
-        "keywords": ["marketcap", "market cap", "cap", "shares", "sharesout", "float"]
-    },
-    "Identifiers_Metadata": {
-        "datasets": [],
-        "keywords": ["exchange", "ticker", "isin", "sedol", "cusip", "country", "currency", "symbol"]
-    },
-    "Corporate_Actions": {
-        "datasets": ["fundamental6"],
-        "keywords": ["dividend", "split", "exdiv", "spin-off", "merger", "delist"]
-    },
-    "Classification_Group": {
-        "datasets": [],
-        "keywords": ["industry", "sector", "gics", "subindustry", "indclass", "classification", "group_id", "group"]
-    },
-    "News_Sentiment": {
-        "datasets": ["news12"],
-        "keywords": ["news", "sentiment", "headline", "mention", "article", "buzz"]
-    },
-    "Analyst_Estimate": {
-        "datasets": ["analyst4"],
-        "keywords": ["estimate", "eps_forecast", "analyst", "consensus", "target_price", "revision"]
-    },
-    "Model_Score": {
-        "datasets": ["model16"],
-        "keywords": ["model", "score", "signal", "model_output", "alpha_model"]
-    },
-    "Fundamental_Income": {
-        "datasets": ["fundamental6"],
-        "keywords": ["revenue", "sales", "eps", "net_income", "profit", "gross_income", "operating_income"]
-    },
-    "Fundamental_Balance": {
-        "datasets": ["fundamental6"],
-        "keywords": ["asset", "liabilit", "equity", "book_value", "total_assets", "intangible", "cash_and"]
-    },
-    "Fundamental_Cashflow": {
-        "datasets": ["fundamental6"],
-        "keywords": ["cashflow", "operating_cash", "free_cash", "fcf", "cash_flow"]
-    },
-    "Fundamental_Ratio": {
-        "datasets": ["fundamental6"],
-        "keywords": ["pe", "pb", "roe", "roa", "margin", "ratio", "yield", "turnover_ratio"]
-    },
-    "Fundamental_Events": {
-        "datasets": ["fundamental6"],
-        "keywords": ["earnings_date", "earnings", "filing", "announcement", "event", "ipo", "merger", "acquisition"]
-    },
-    "Technical_Indicator": {
-        "datasets": ["pv1"],
-        "keywords": ["sma", "ema", "rsi", "macd", "bollinger", "adx", "roc", "stochastic"]
-    },
-    "TimeSeries_Feature": {
-        "datasets": [],
-        "keywords": ["lag", "diff", "rolling", "ts_", "window", "lookback", "momentum", "decay", "zscore"]
-    },
-    "Group_VECTOR": {
-        "datasets": [],
-        "keywords": ["bucket", "group_index", "groupid", "group_id", "category_index", "cartesian", "bucket_index"]
-    },
-    # Catch-all categories (less preferred)
-    "Fundamental_Other": {
-        "datasets": ["fundamental6"],
-        "keywords": []
-    },
-    "Other": {
-        "datasets": [],
-        "keywords": []
-    }
-}
-# -------------------------------
-
-# helper: flatten keywords map for fast lookup
-def _lower(x: Any) -> str:
-    return "" if x is None else str(x).lower()
-
-def detect_columns(df: pd.DataFrame) -> Dict[str, str]:
-    """Return mapping of expected cols: id_col, name_col, desc_col, dataset_col, type_col"""
-    cols = {c.lower(): c for c in df.columns}
-    id_col = next((cols[k] for k in ("id","field_id","field","name","fieldname") if k in cols), None)
-    name_col = next((cols[k] for k in ("name","field_name","display_name") if k in cols), id_col)
-    desc_col = next((cols[k] for k in ("description","desc","long_description","details") if k in cols), None)
-    dataset_col = next((cols[k] for k in ("dataset","dataset_id","source_dataset") if k in cols), None)
-    type_col = next((cols[k] for k in ("type","data_type","field_type") if k in cols), None)
-    return {"id": id_col, "name": name_col, "desc": desc_col, "dataset": dataset_col, "type": type_col}
-
-# helper for matching quality
-def best_keyword_match(text: str, keywords: List[str]) -> int:
-    """
-    返回在 text 中匹配到的关键词数量（越多越好）。
-    keywords 已经是小写的关键词列表；text 已经小写。
-    """
-    if not keywords:
-        return 0
-    count = 0
-    for kw in keywords:
-        if not kw:
+# =========================
+# Step 1. 加载所有 csv 文件
+# =========================
+def load_all_fields() -> pd.DataFrame:
+    """读取 data/wq_fields 下所有有效 CSV 文件并合并"""
+    dfs = []
+    for file in FIELDS_DIR.glob("*.csv"):
+        if file.stat().st_size == 0:
+            logging.warning(f"⚠️ Skipping empty file (0 bytes): {file.name}")
             continue
-        if kw in text:
-            count += 1
-    return count
+        try:
+            df = pd.read_csv(file, dtype=str, keep_default_na=False)
+            if df.empty or len(df.columns) == 0:
+                logging.warning(f"⚠️ Skipping file with no valid columns: {file.name}")
+                continue
+            df["__dataset__"] = file.stem
+            dfs.append(df)
 
-# 新的优先级列表（更具体的 category 放在前面）
-CATEGORY_PRIORITY = [
-    "News_Sentiment", "Analyst_Estimate", "Model_Score",
-    "Fundamental_Income", "Fundamental_Balance", "Fundamental_Cashflow", "Fundamental_Ratio", "Fundamental_Events",
-    "Technical_Indicator", "Price", "Volume", "MarketCap_Shares",
-    "Classification_Group", "Identifiers_Metadata", "Group_VECTOR",
-    "TimeSeries_Feature", "Corporate_Actions",
-    "Fundamental_Other", "Other"
-]
+        except pd.errors.EmptyDataError:
+            logging.warning(f"⚠️ Skipping malformed file (EmptyDataError): {file.name}")
+            continue
+        except pd.errors.ParserError as e:
+            logging.warning(f"⚠️ Skipping broken CSV (ParserError): {file.name} ({e})")
+            continue
+        except Exception as e:
+            logging.error(f"❌ Unexpected error reading {file.name}: {e}")
+            continue
+    if not dfs:
+        raise RuntimeError(f"❌ No valid CSV files found in {FIELDS_DIR}")
 
-def classify_row(row: Dict[str, Any], col_map: Dict[str,str]) -> str:
+    return pd.concat(dfs, ignore_index=True)
+
+
+# =========================
+# Step 2. 聚类逻辑
+# =========================
+def cluster_fields_by_semantics_auto(df: pd.DataFrame,
+                                     min_cluster_size: int = 3,
+                                     min_samples: int = 2) -> Dict[int, List[str]]:
     """
-    改进后的分类逻辑：
-      1) 先根据 dataset 找 candidate categories（但不立刻返回）
-      2) 在 candidate 中按关键词匹配打分（匹配关键词数量越多优先）
-      3) 若 candidate 没有关键词匹配，则在全局 categories 中按关键词匹配打分并选最优
-      4) 若仍无匹配，使用 type 回退规则
-      5) 最终返回 Other
+    使用 HDBSCAN 自动确定聚类数量的语义聚类方法。
+    基于 id + description 文本表示。
     """
-    name = _lower(row.get(col_map["name"], "")) if col_map["name"] else ""
-    desc = _lower(row.get(col_map["desc"], "")) if col_map["desc"] else ""
-    dataset = _lower(row.get(col_map["dataset"], "")) if col_map["dataset"] else ""
-    dtype = _lower(row.get(col_map["type"], "")) if col_map["type"] else ""
-    text = (name + " " + desc).strip()
+    if len(df) <= min_cluster_size:
+        # 数据太少，不聚类
+        return {0: df["id"].tolist()}
 
-    # 1) 找出 dataset 命中的候选 categories（保持优先级顺序）
-    dataset_candidates = []
-    for cat in CATEGORY_PRIORITY:
-        meta = CATEGORY_MAP.get(cat, {})
-        ds_list = [d.lower() for d in meta.get("datasets", [])]
-        for ds in ds_list:
-            if ds and ds in dataset:
-                dataset_candidates.append(cat)
-                break
+    texts = (df["id"].astype(str) + " " + df["description"].astype(str)).tolist()
 
-    # 2) 在 dataset_candidates 中按关键词计分并选择最优
-    best_cat = None
-    best_score = 0
-    for cat in dataset_candidates:
-        kws = [k.lower() for k in CATEGORY_MAP.get(cat, {}).get("keywords", [])]
-        score = best_keyword_match(text, kws)
-        if score > best_score:
-            best_score = score
-            best_cat = cat
+    # Step 1. TF-IDF 向量化
+    tfidf = TfidfVectorizer(max_features=2000)
+    X = tfidf.fit_transform(texts)
 
-    if best_cat and best_score > 0:
-        return best_cat
+    # Step 2. HDBSCAN 聚类
+    clusterer = hdbscan.HDBSCAN(
+        min_cluster_size=min_cluster_size,
+        min_samples=min_samples,
+        metric='euclidean',
+        cluster_selection_method='eom'
+    )
+    labels = clusterer.fit_predict(X.toarray())
 
-    # 3) 如果 dataset_candidates 存在但没有关键词匹配（即 dataset 很通用），
-    #    我们选择在 dataset_candidates 中返回第一个（按 CATEGORY_PRIORITY），
-    #    但仅当 dataset_candidates 的长度为1 或者我们允许 dataset-only 映射时。
-    #    为避免把所有 pv1 都投到 Price，可以设阈值：如果 dataset_candidates 有多个，
-    #    不自动选，转入全局 keyword 匹配；如果只有一个，则选它。
-    if len(dataset_candidates) == 1:
-        return dataset_candidates[0]
+    # Step 3. 聚类结果收集
+    clusters: Dict[int, List[str]] = {}
+    for idx, label in enumerate(labels):
+        if label == -1:
+            # -1 表示噪声，可选择丢弃或单独归类
+            label = 9999  # 归入“噪声”类
+        clusters.setdefault(label, []).append(df.iloc[idx]["id"])
 
-    # 4) 全局关键词匹配（按 priority 遍历，找到第一个匹配多个关键词的 category）
-    best_cat = None
-    best_score = 0
-    for cat in CATEGORY_PRIORITY:
-        kws = [k.lower() for k in CATEGORY_MAP.get(cat, {}).get("keywords", [])]
-        score = best_keyword_match(text, kws)
-        if score > best_score:
-            best_score = score
-            best_cat = cat
+    # 可选：按簇大小排序
+    clusters = dict(sorted(clusters.items(), key=lambda x: -len(x[1])))
+    return clusters
 
-    if best_cat and best_score > 0:
-        return best_cat
 
-    # 5) 回退：根据 dtype hints
-    if "group" in dtype:
-        return "Group_VECTOR"
-    if "symbol" in dtype or "id" in dtype or "string" in dtype:
-        return "Identifiers_Metadata"
-    if "matrix" in dtype or "time" in dtype or "vector" in dtype:
-        if dataset and "fundamental" in dataset:
-            return "Fundamental_Other"
-        return "TimeSeries_Feature"
+# =========================
+# Step 3. 调用 LLM 命名类别
+# =========================
+def get_llm_client():
+    return OpenAI(
+        base_url=ConfigLoader.get("openai_base_url"),
+        api_key=ConfigLoader.get("openai_api_key"),
+    )
 
-    # 6) 默认返回 Other
-    return "Other"
 
-def annotate(df: pd.DataFrame) -> pd.DataFrame:
-    col_map = detect_columns(df)
-    logging.info(f"Detected columns map: {col_map}")
-    # ensure columns exist
-    output_rows = []
-    for _, r in df.iterrows():
-        row = r.to_dict()
-        cat = classify_row(row, col_map)
-        row_out = dict(row)
-        row_out["final_category"] = cat
-        # keep normalized fields for convenience
-        row_out["_detected_dataset"] = row.get(col_map["dataset"]) if col_map["dataset"] else ""
-        row_out["_detected_type"] = row.get(col_map["type"]) if col_map["type"] else ""
-        output_rows.append(row_out)
-    return pd.DataFrame(output_rows)
+def name_cluster_with_llm(client, type_name: str, dataset: str, sample_texts: List[str]) -> str:
+    """调用 LLM 生成聚类名称"""
+    joined = "\n".join(sample_texts[:5])  # 只取前几个字段描述
+    prompt = f"""
+You are classifying quantitative finance data fields.
+Given the dataset = {dataset} and field type = {type_name}.
+Below are some field examples:
+{joined}
 
-def generate_template_fields():
-    if not DEFAULT_IN.exists():
-        logging.error(f"Input file not found: {DEFAULT_IN}")
-        return
+Please propose a short, meaningful lowercase name (1-3 words) for this group, 
+like "momentum", "valuation_ratio", "sentiment_score", etc.
+Return only the name.
+"""
+    resp = client.chat.completions.create(
+        model=ConfigLoader.get("openai_model_name"),
+        messages=[{"role": "system", "content": "You are a finance data classifier."},
+                  {"role": "user", "content": prompt}],
+        temperature=0.3,
+    )
+    name = resp.choices[0].message.content.strip()
+    # 清理非法字符
+    name = name.replace(" ", "_").replace("-", "_").lower()
+    return name
 
-    logging.info(f"Loading {DEFAULT_IN}")
-    df = pd.read_csv(DEFAULT_IN, dtype=str, keep_default_na=False)
-    annotated = annotate(df)
 
-    # write CSV / JSON
-    annotated.to_csv(OUT_CSV, index=False, encoding="utf-8")
-    records = annotated.to_dict(orient="records")
+# =========================
+# Step 4. 主生成逻辑
+# =========================
+def generate_template_fields_v2():
+    logging.info("📥 Loading all field csvs...")
+    df = load_all_fields()
+
+    # 自动检测必要列
+    expected_cols = {"id", "description", "type"}
+    if not expected_cols.issubset(df.columns):
+        raise ValueError(f"Missing required columns in input: {expected_cols - set(df.columns)}")
+
+    client = get_llm_client()
+    all_mappings = {}
+
+    # 按 dataset + type 分组
+    grouped = df.groupby(["__dataset__", "type"])
+    for (dataset, dtype), subdf in grouped:
+        if len(subdf) < 3:
+            print(f"Skipping small group: {dataset}:{dtype} ({len(subdf)})")
+            continue
+
+        print(f"🧩 Processing dataset={dataset}, type={dtype}, size={len(subdf)}")
+        clusters = cluster_fields_by_semantics_auto(subdf)
+
+        for cluster_id, field_ids in clusters.items():
+            sample_df = subdf[subdf["id"].isin(field_ids)]
+            sample_texts = (sample_df["id"] + " " + sample_df["description"]).tolist()
+            type_name = name_cluster_with_llm(client, dtype, dataset, sample_texts)
+
+            key = f"</{type_name}:{dtype}:{dataset}/>"
+            all_mappings[key] = field_ids
+            print(f"✅ Generated type: {key} ({len(field_ids)} fields)")
+
+    # 保存结果
     with open(OUT_JSON, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
-
-    # generate review list: UNKNOWN or Other or categories flagged for review
-    review_df = annotated[annotated["final_category"].isin(["Other", "Fundamental_Other"])]
-    review_df.to_csv(REVIEW_CSV, index=False, encoding="utf-8")
-    logging.info(f"Wrote {OUT_CSV}, {OUT_JSON}, review file {REVIEW_CSV}")
-    logging.info(f"Total fields: {len(df)}, annotated: {len(records)}, need review: {len(review_df)}")
+        json.dump(all_mappings, f, ensure_ascii=False, indent=2)
+    print(f"🎯 Saved {len(all_mappings)} template field types to {OUT_JSON}")
 
 
 if __name__ == "__main__":
-    generate_template_fields()
+    generate_template_fields_v2()

@@ -9,7 +9,7 @@ from researcher.generate_alpha import generate_alphas_from_template
 from researcher.generate_template import from_post_to_template
 from scraper.preprocess_texts import preprocess_all_html_posts
 from scraper.scrap_posts_from_wq import scrape_new_posts
-from utils.template_field_gener import generate_template_fields
+from utils.template_field_gener import generate_template_fields_v2
 from utils.template_op_gener import generate_template_ops
 from utils.wq_info_loader import OpAndFeature
 
@@ -25,19 +25,20 @@ if __name__ == "__main__":
     # opAndFeature.get_data_fields()
     #
     # generate_template_ops()
-    # generate_template_fields()
+    # generate_template_fields_v2()
 
 
-    ## template_file = from_post_to_template()
-    ## alphas_file = generate_alphas_from_template(template_file)
 
-    POSTS_DIR = Path("data/wq_posts/helpful_posts")
-    for json_file in POSTS_DIR.glob("*.json"):
+    template_file = from_post_to_template()
+    alphas_file = generate_alphas_from_template(template_file)
 
-        template_file = from_post_to_template(str(json_file))
-        if template_file is None:
-            continue
-        alphas_file = generate_alphas_from_template(template_file)
+    # POSTS_DIR = Path("data/wq_posts/helpful_posts")
+    # for json_file in POSTS_DIR.glob("*.json"):
+    #
+    #     template_file = from_post_to_template(str(json_file))
+    #     if template_file is None:
+    #         continue
+    #     alphas_file = generate_alphas_from_template(template_file)
 
     # ALPHA_DIR = Path("data/alpha_db/all_alphas")
     # for json_file in ALPHA_DIR.glob("*.json"):

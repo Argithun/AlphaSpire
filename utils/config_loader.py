@@ -40,7 +40,13 @@ class ConfigLoader:
             "worldquant_api_auth": os.getenv("WORLDQUAN_API_AUTH", yaml_config.get("worldquant_api_auth")),
             "worldquant_consultant_posts_url": os.getenv("WORLDQUANT_CONSULTANT_POSTS_URL",
                                                          yaml_config.get("worldquant_consultant_posts_url")),
+
+            "enabled_field_datasets": yaml_config.get("enabled_field_datasets", [])
         }
+
+        # 确保是列表格式
+        if not isinstance(self._config["enabled_field_datasets"], list):
+            self._config["enabled_field_datasets"] = [self._config["enabled_field_datasets"]]
 
     @classmethod
     def get(cls, key: str, default=None):

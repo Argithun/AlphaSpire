@@ -14,3 +14,11 @@ worldquant_password: "alan888@WQ"
 worldquant_login_url: "https://platform.worldquantbrain.com/sign-in"
 worldquant_api_auth: "https://api.worldquantbrain.com/authentication"
 worldquant_consultant_posts_url: "https://support.worldquantbrain.com/hc/en-us/community/topics/18910956638743-顾问专属中文论坛"
+
+# --- Dataset from WorldQuant Brain
+enabled_field_datasets:
+  - pv1
+  - fundamental6
+  - news20
+  - analyst10
+  - model26

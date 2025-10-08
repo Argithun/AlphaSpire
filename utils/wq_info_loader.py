@@ -15,7 +15,7 @@ WQ_FIELD_DIR.mkdir(parents=True, exist_ok=True)
 WQ_OPERATOR_DIR = BASE_DIR / "data" / "wq_operators"
 WQ_OPERATOR_DIR.mkdir(parents=True, exist_ok=True)
 
-FIELDS_CSV = WQ_FIELD_DIR / "fields.csv"
+FIELDS_CSV = WQ_FIELD_DIR
 OPERATORS_CSV = WQ_OPERATOR_DIR / "operators.csv"
 
 
@@ -38,15 +38,78 @@ class OpAndFeature:
         if response.status_code != 201:
             raise Exception(f"Authentication failed: {response.text}")
 
-    def get_data_fields(self) -> List[Dict]:
+    def get_data_fields(self):
         """Fetch available data fields from WorldQuant Brain across multiple datasets with random sampling."""
-        if FIELDS_CSV.exists():
-            logging.info(f"Fields CSV already exists at {FIELDS_CSV}, skipping download.")
-            return pd.read_csv(FIELDS_CSV).to_dict(orient='records')
 
         # datasets = ['pv1', 'fundamental6', 'analyst4', 'model16', 'news12']
-        datasets = ['pv1', 'fundamental6', 'model16']
-        all_fields = []
+
+        datasets = ['analyst10',
+                    'analyst11',
+                    'analyst14',
+                    'analyst15',
+                    'analyst16',
+                    'analyst35',
+                    'analyst40',
+                    'analyst69',
+                    'earnings3',
+                    'earnings5',
+                    'fundamental17',
+                    'fundamental22',
+                    'fundamental23',
+                    'fundamental28',
+                    'fundamental31',
+                    'fundamental44',
+                    'fundamental6',
+                    'fundamental7',
+                    'fundamental72',
+                    'model109',
+                    'model110',
+                    'model138',
+                    'model176',
+                    'model219',
+                    'model238',
+                    'model244',
+                    'model26',
+                    'model262',
+                    'model264',
+                    'model29',
+                    'model30',
+                    'model307',
+                    'model32',
+                    'model38',
+                    'model53',
+                    'model77',
+                    'news20',
+                    'news23',
+                    'news52',
+                    'news66',
+                    'other128',
+                    'other432',
+                    'other450',
+                    'other455',
+                    'other460',
+                    'other496',
+                    'other551',
+                    'other553',
+                    'other699',
+                    'other83',
+                    'pv1',
+                    'pv13',
+                    'pv173',
+                    'pv29',
+                    'pv37',
+                    'pv53',
+                    'pv72',
+                    'pv73',
+                    'pv96',
+                    'risk60',
+                    'risk66',
+                    'risk70',
+                    'sentiment21',
+                    'sentiment22',
+                    'sentiment26',
+                    'shortinterest6',
+                    'univ1']
 
         base_params = {
             'delay': 1,
@@ -60,6 +123,12 @@ class OpAndFeature:
             logging.info("Requesting data fields from multiple datasets...")
             for dataset in datasets:
                 logging.info("------------" + dataset + "--------------\n")
+                des = str(FIELDS_CSV) + "/" + dataset + ".csv"
+                if Path(des).exists():
+                    logging.info(f"Fields CSV already exists at {des}, skipping download.")
+                    return
+
+                all_fields = []
                 params = base_params.copy()
                 params['dataset.id'] = dataset
 
@@ -87,20 +156,20 @@ class OpAndFeature:
                 else:
                     logging.warning(f"Failed to get count for {dataset}: {count_response.text[:500]}")
 
-            # 去重
-            unique_fields = {field['id']: field for field in all_fields}.values()
-            unique_fields = list(unique_fields)
+                # 去重
+                unique_fields = {field['id']: field for field in all_fields}.values()
+                unique_fields = list(unique_fields)
 
-            # 保存到 CSV
-            df = pd.DataFrame(unique_fields)
-            df.to_csv(FIELDS_CSV, index=False, encoding='utf-8')
-            logging.info(f"✅ Saved fields CSV to {FIELDS_CSV}")
+                # 保存到 CSV
+                df = pd.DataFrame(unique_fields)
+                df.to_csv(des, index=False, encoding='utf-8')
+                logging.info(f"✅ Saved fields CSV to {des}")
 
-            return unique_fields
+            return
 
         except Exception as e:
             logging.error(f"Failed to fetch data fields: {e}")
-            return []
+            return
 
     def get_operators(self) -> List[Dict]:
         """Fetch available operators from WorldQuant Brain."""
