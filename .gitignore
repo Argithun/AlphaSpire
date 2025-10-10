@@ -33,9 +33,9 @@ Thumbs.db
 .ipynb_checkpoints/
 
 # 项目草稿和数据
-data/alpha_db/
-data/hypothesis_db/
-data/template_db/
+data/alpha_db*
+data/hypothesis_db*
+data/template_db*
 test/
 
 # Playwright/Browser自动生成的数据
