@@ -15,12 +15,12 @@ inject_wq_knowledge: |-
   ## Field Types with Included Fields:
   {{ field_types }}
   
-  ## Operator Types with Included Operators:
+  ## Operator Types with Included Operators (operator types follows the </short_description:data_type:dataset_name/> format):
   {{ operator_types }}
   
   This knowledge represents all the allowed building blocks for alpha template construction.
   - Each field and operator listed above can be used directly.
-  - Each field type and operator type (e.g., </Price/>, </TS:Aggregation/>) can also be used as a placeholder.
+  - Each field type and operator type (e.g., </market_metrics:MATRIX:pv1/>, </TS:Aggregation/>) can also be used as a placeholder.
   - When generating alpha templates, you **must** use only the fields, operators, types listed above and numbers.
   - Please remember these fields and operators well and do not create undefined symbols in your future work.
   - Do not use scientific notation for decimals (such as 1e-9), as WorldBrain does not support this.
@@ -54,7 +54,7 @@ blog_to_hypothesis: |-
   Follow these steps carefully:
   1. Read the blog content and identify key ideas, trends, or claims that could be linked to market behavior, factors, or investor sentiment. 
   2. Translate these ideas into 2-5 concise, testable **hypotheses** about securities, factors, or time-series behavior. Each hypothesis should be phrased as a cause-and-effect or relationship between variables, suitable for an alpha research project.  
-  3. When possible, highlight which types of data fields (</Price/>, </Volume/>, </Fundamental_Balance/>, </MarketCap_Shares/>, </Analyst_Estimate/>, etc.) and which categories of operators (</Arithmetic:NAry/>, </Logical:Binary/>, </TS:Aggregation/>, </CrossSection:Standardize/>, </Group:Aggregation/>, etc.) might be relevant to test the hypothesis. Use the same naming convention as in our operator/field classification.  
+  3. When possible, highlight which types of data fields (</market_metrics:MATRIX:pv1/>, </cash_flow_metrics:MATRIX:fundamental6/>, </free_cash_flow:MATRIX:analyst10/>, </earnings_surprise:MATRIX:model26/>, </price_return_ratio:VECTOR:analyst10/>, etc.) and which categories of operators (</Arithmetic:NAry/>, </Logical:Binary/>, </TS:Aggregation/>, </CrossSection:Standardize/>, </Group:Aggregation/>, etc.) might be relevant to test the hypothesis. Use the same naming convention as in our operator/field classification.  
   4. Output a numbered list of hypotheses. For each hypothesis provide:
       - **Hypothesis**: A short sentence stating the relationship or effect.
       - **Rationale**: Why this relationship may hold according to the blog’s content.
@@ -64,13 +64,13 @@ blog_to_hypothesis: |-
         {
           "Hypothesis": "During periods of heightened market volatility, technology sector stocks tend to experience increased trading volume relative to other sectors.",
           "Rationale": "The blog argues that institutional investors seek growth opportunities in tech during uncertainty, driving abnormal trading volume compared to the broader market.",
-          "Potential Fields": ["</Price/>", "</Volume/>"],
+          "Potential Fields": ["</market_grouping:GROUP:pv1/>", "</market_metrics:MATRIX:pv1/>"],
           "Potential Operators": ["</TS:Aggregation/>", "</CrossSection:Standardize/>"]
         },
         {
           "Hypothesis": "Stocks with stronger analyst earnings revisions outperform their peers in the following quarter.",
           "Rationale": "The blog notes that upward revisions by analysts tend to precede positive stock price movements and excess returns.",
-          "Potential Fields": ["</Analyst_Estimate/>", "</Fundamental_Balance/>"],
+          "Potential Fields": ["</earnings_estimates:VECTOR:analyst10/>", "</balance_sheet_items:VECTOR:fundamental6/>"],
           "Potential Operators": ["</Arithmetic:Unary/>", "</TS:Transform/>", "</CrossSection:Standardize/>"]
         }
       ]
@@ -113,12 +113,13 @@ hypothesis_to_template: |-
   }
   
   ## IMPORTANT:
-  - You MUST include **between 1 and 3 field/operator types** (placeholders like </Price/> or </TS:Aggregation/>) in the final template expression.
+  - You MUST include **between 1 and 3 field/operator types** (placeholders like </market_metrics:MATRIX:pv1/> or </TS:Aggregation/>) in the final template expression.
   - Templates **without placeholders** are invalid and must not be produced.
   - Prefer using types over concrete fields/operators, but concrete fields/operators cannot be ignored when generating template.
-  - You **must** include at least **1** and at most **3** types(field types or operator types) in template expression.
+  - You **must** include at least **1** and at most **4** types(field types or operator types) in template expression.
     - Do **not** generate an alpha without using types (types num < 1)!!!
-    - Do **not** generate a template that contains too many types (types num > 3)!!!
+    - Do **not** generate a template that contains too many types (types num > 4)!!!
+  - You need to fully consider all the field types and operator types provided to you, and do not rely on the ones given in the examples.
 
   ## Rules:
   - The template must follow the WorldQuant Fast Expression syntax.
@@ -131,15 +132,15 @@ hypothesis_to_template: |-
   - Do **not** output any comments within the json structure
   
   ## Good Placeholder Examples (just to illustrate):
-  - ts_rank(</Price/>, 20)
-  - divide(</Volume/>, </TS:Aggregation/>(</Price/>, 10))
-  - </CrossSection:Standardize/>(</Fundamental_Balance/>)
+  - ts_rank(</market_metrics:MATRIX:pv1/>, 20)
+  - divide(</market_grouping:GROUP:pv1/>, </TS:Aggregation/>(</market_metrics:MATRIX:pv1/>, 10))
+  - </CrossSection:Standardize/>(</balance_sheet_items:VECTOR:fundamental6/>)
   
   ## Output Example (just to illustrate, do not rely on it): 
   ```
   {
     "SelectedHypothesis": "Alpha signals with very low turnover (below 5%) can be transformed into more useful signals by applying ts_target_tvr_decay with expanded lambda_max parameter to increase turnover towards optimal target ranges.",
-    "TemplateExpression": "</TS:Transform/>(ts_delta(</Price/>, 5), 0, 5, 0.15)",
+    "TemplateExpression": "</TS:Transform/>(ts_delta(</market_metrics:MATRIX:pv1/>, 5), 0, 5, 0.15)",
     "Description": "Applies TS:Transform optimization to a simple 5-day price momentum signal to normalize turnover towards 15% target",
     "ExpectedBehavior": "The expression will adaptively adjust the decay parameter to bring the turnover of the underlying momentum signal closer to the target 15% level, making low-turnover signals more viable while preserving the core alpha signal"
   }

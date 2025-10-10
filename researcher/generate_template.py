@@ -16,8 +16,8 @@ from utils.json_dealer import extract_json
 # --- 路径 ---
 BASE_DIR = Path(__file__).resolve().parents[1]
 POSTS_DIR = BASE_DIR / "data" / "wq_posts" / "helpful_posts"
-HYPOTHESIS_DB = BASE_DIR / "data" / "hypothesis_db"
-TEMPLATE_DB = BASE_DIR / "data" / "template_db"
+HYPOTHESIS_DB = BASE_DIR / "data" / "hypothesis_db_v2"
+TEMPLATE_DB = BASE_DIR / "data" / "template_db_v2"
 PROMPT_FILE = BASE_DIR / "prompts" / "template_generating.yaml"
 
 HYPOTHESIS_DB.mkdir(parents=True, exist_ok=True)

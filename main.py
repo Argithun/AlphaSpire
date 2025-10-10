@@ -41,6 +41,7 @@ if __name__ == "__main__":
             continue
         alphas_file = generate_alphas_from_template(template_file)
 
+
     # ALPHA_DIR = Path("data/alpha_db/all_alphas")
     # for json_file in ALPHA_DIR.glob("*.json"):
     #     backtest_result = run_backtest_mul_by_wq_api(json_file)

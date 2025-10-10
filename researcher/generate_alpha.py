@@ -7,8 +7,8 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 OPERATORS_FILE = BASE_DIR / "data" / "wq_template_operators" / "template_operators.csv"
-FIELDS_FILE = BASE_DIR / "data" / "wq_template_fields" / "template_fields.csv"
-ALPHA_DB = BASE_DIR / "data" / "alpha_db" / "all_alphas"
+FIELDS_FILE = BASE_DIR / "data" / "wq_template_fields" / "template_fields.json"
+ALPHA_DB = BASE_DIR / "data" / "alpha_db_v2" / "all_alphas"
 ALPHA_DB.mkdir(parents=True, exist_ok=True)
 
 # === 最大单次生成 alpha 数量限制 ===
@@ -28,15 +28,16 @@ def load_operator_type_map():
 
 
 def load_field_type_map():
-    """读取 template_fields.csv，返回 {final_category: [id,...]}"""
-    field_map = {}
+    """读取 template_fields.json，返回 {final_category: [id,...]}"""
+    handled_field_map = {}
     with open(FIELDS_FILE, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            ftype = row["final_category"].strip()
-            fid = row["id"].strip()
-            field_map.setdefault(ftype, []).append(fid)
-    return field_map
+        field_map = json.load(f)
+    for raw_type, ids in field_map.items():
+        # 提取 </type_name:TYPE:dataset/> 中的核心部分
+        clean_type = re.sub(r"^</|/>$", "", raw_type).strip()
+        handled_field_map[clean_type] = ids
+    return handled_field_map
+
 
 
 def extract_placeholders(expression):

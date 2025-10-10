@@ -9,7 +9,7 @@ from requests.auth import HTTPBasicAuth
 from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BACKTEST_DIR = BASE_DIR / "data" / "alpha_db" / "backtest_result"
+BACKTEST_DIR = BASE_DIR / "data" / "alpha_db_v2" / "backtest_result"
 BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(filename='backtest_with_wq.log', level=logging.INFO,

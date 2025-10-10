@@ -19,6 +19,5 @@ worldquant_consultant_posts_url: "https://support.worldquantbrain.com/hc/en-us/c
 enabled_field_datasets:
   - pv1
   - fundamental6
-  - news20
   - analyst10
   - model26
