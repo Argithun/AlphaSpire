@@ -113,7 +113,7 @@ def get_llm_client():
 
 def name_cluster_with_llm(client, type_name: str, dataset: str, sample_texts: List[str]) -> str:
     """调用 LLM 生成聚类名称"""
-    joined = "\n".join(sample_texts[:5])  # 只取前几个字段描述
+    joined = "\n".join(sample_texts)  # 只取前几个字段描述
     prompt = f"""
 You are classifying quantitative finance data fields.
 Given the dataset = {dataset} and field type = {type_name}.
