@@ -42,3 +42,9 @@ AI agent-driven fully automated Alpha mining.
                 │                            │
                 └────────────────────────────┘
 ```
+
+## Deployment
+
+```bash
+conda env create -f environment.yml
+```

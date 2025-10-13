@@ -30,9 +30,9 @@ class OpAndFeature:
         """Set up authentication with WorldQuant Brain."""
         self.sess.auth = HTTPBasicAuth(username, password)
 
-        logging.info("Authenticating with WorldQuant Brain...")
+        print("Authenticating with WorldQuant Brain...")
         response = self.sess.post('https://api.worldquantbrain.com/authentication')
-        logging.info(f"Authentication response status: {response.status_code}")
+        print(f"Authentication response status: {response.status_code}")
         logging.debug(f"Authentication response: {response.text[:500]}...")
 
         if response.status_code != 201:
@@ -43,7 +43,8 @@ class OpAndFeature:
 
         # datasets = ['pv1', 'fundamental6', 'analyst4', 'model16', 'news12']
 
-        datasets = ['analyst10',
+        datasets = ['analyst4',
+                    'analyst10',
                     'analyst11',
                     'analyst14',
                     'analyst15',
@@ -65,6 +66,7 @@ class OpAndFeature:
                     'model109',
                     'model110',
                     'model138',
+                    'model16',
                     'model176',
                     'model219',
                     'model238',
@@ -79,6 +81,7 @@ class OpAndFeature:
                     'model38',
                     'model53',
                     'model77',
+                    'news12',
                     'news20',
                     'news23',
                     'news52',
@@ -120,25 +123,25 @@ class OpAndFeature:
         }
 
         try:
-            logging.info("Requesting data fields from multiple datasets...")
+            print("Requesting data fields from multiple datasets...")
             for dataset in datasets:
-                logging.info("------------" + dataset + "--------------\n")
+                print("------------" + dataset + "--------------\n")
                 des = str(FIELDS_CSV) + "/" + dataset + ".csv"
                 if Path(des).exists():
-                    logging.info(f"Fields CSV already exists at {des}, skipping download.")
-                    return
+                    print(f"Fields CSV already exists at {des}, skipping download.")
+                    continue
 
                 all_fields = []
                 params = base_params.copy()
                 params['dataset.id'] = dataset
 
-                logging.info(f"Getting field count for dataset: {dataset}")
+                print(f"Getting field count for dataset: {dataset}")
                 count_response = self.sess.get('https://api.worldquantbrain.com/data-fields', params=params)
 
                 if count_response.status_code == 200:
                     count_data = count_response.json()
                     total_fields = count_data.get('count', 0)
-                    logging.info(f"Total fields in {dataset}: {total_fields}")
+                    print(f"Total fields in {dataset}: {total_fields}")
 
                     params['limit'] = 50
 
@@ -149,12 +152,12 @@ class OpAndFeature:
                         if response.status_code == 200:
                             data = response.json()
                             fields = data.get('results', [])
-                            logging.info(f"Fetched {len(fields)} fields at offset={offset}")
+                            print(f"Fetched {len(fields)} fields at offset={offset}")
                             all_fields.extend(fields)
                         else:
-                            logging.warning(f"Failed to fetch fields for {dataset} at offset={offset}: {response.text[:500]}")
+                            print(f"Failed to fetch fields for {dataset} at offset={offset}: {response.text[:500]}")
                 else:
-                    logging.warning(f"Failed to get count for {dataset}: {count_response.text[:500]}")
+                    print(f"Failed to get count for {dataset}: {count_response.text[:500]}")
 
                 # 去重
                 unique_fields = {field['id']: field for field in all_fields}.values()
@@ -163,23 +166,23 @@ class OpAndFeature:
                 # 保存到 CSV
                 df = pd.DataFrame(unique_fields)
                 df.to_csv(des, index=False, encoding='utf-8')
-                logging.info(f"✅ Saved fields CSV to {des}")
+                print(f"✅ Saved fields CSV to {des}")
 
             return
 
         except Exception as e:
-            logging.error(f"Failed to fetch data fields: {e}")
+            print(f"Failed to fetch data fields: {e}")
             return
 
     def get_operators(self) -> List[Dict]:
         """Fetch available operators from WorldQuant Brain."""
         if OPERATORS_CSV.exists():
-            logging.info(f"Operators CSV already exists at {OPERATORS_CSV}, skipping download.")
+            print(f"Operators CSV already exists at {OPERATORS_CSV}, skipping download.")
             return pd.read_csv(OPERATORS_CSV).to_dict(orient='records')
 
-        logging.info("Requesting operators...")
+        print("Requesting operators...")
         response = self.sess.get('https://api.worldquantbrain.com/operators')
-        logging.info(f"Operators response status: {response.status_code}")
+        print(f"Operators response status: {response.status_code}")
         logging.debug(f"Operators response: {response.text[:500]}...")  # Print first 500 chars
 
         if response.status_code != 200:
@@ -195,6 +198,6 @@ class OpAndFeature:
 
         df = pd.DataFrame(operators)
         df.to_csv(OPERATORS_CSV, index=False, encoding='utf-8')
-        logging.info(f"✅ Saved operators CSV to {OPERATORS_CSV}")
+        print(f"✅ Saved operators CSV to {OPERATORS_CSV}")
 
         return operators

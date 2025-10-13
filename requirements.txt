@@ -1,44 +1,14 @@
-attrs==25.3.0
-beautifulsoup4 @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_4910wm3bdc/croot/beautifulsoup4-split_1756453097265/work
-Bottleneck @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_55txi4fy1u/croot/bottleneck_1731058642212/work
-brotlicffi @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_b5py2dr5ag/croot/brotlicffi_1736182482518/work
-certifi @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_barck9k8fe/croot/certifi_1754570651396/work/certifi
-cffi @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_e4xd9yd9i2/croot/cffi_1736182819442/work
-charset-normalizer @ file:///croot/charset-normalizer_1721748349566/work
+beautifulsoup4==4.14.2
 cloudscraper==1.2.71
-exceptiongroup==1.3.0
-greenlet==3.2.4
-h11==0.16.0
-idna @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_a12xpo84t2/croot/idna_1714398852854/work
-loguru @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_deuhywgtcz/croot/loguru_1729800304209/work
-numexpr @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_766kpwgy17/croot/numexpr_1755766476118/work
-numpy @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_8cclhhg0x3/croot/numpy_and_numpy_base_1755590859900/work/dist/numpy-2.2.5-cp310-cp310-macosx_11_0_arm64.whl#sha256=b967225664922674c61a6f5ed763b32313e349285e9ce915fe40b0c38dcb459f
-outcome==1.3.0.post0
-packaging==25.0
-pandas @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_821z9jhn6_/croot/pandas_1756466408691/work/dist/pandas-2.3.2-cp310-cp310-macosx_11_0_arm64.whl#sha256=7b930b5deccba0144c218696a8c6f1bd6c2ad87be5cd793aa515b2dfd8a1e628
+hdbscan==0.8.40
+langchain==0.3.27
+langchain_openai==0.3.35
+loguru==0.7.2
+matplotlib==3.10.7
+openai==2.3.0
+pandas==2.3.3
 playwright==1.55.0
-pycparser @ file:///opt/miniconda3/conda-bld/pycparser_1757496094255/work
-pyee==13.0.0
-pyparsing==3.2.5
-PySocks @ file:///Users/ktietz/ci_310/pysocks_1643961536721/work
-python-dateutil @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_66ud1l42_h/croot/python-dateutil_1716495741162/work
-python-dotenv==1.1.1
-pytz @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_3bjczh6it0/croot/pytz_1752135865541/work
-PyYAML @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_faoex52hrr/croot/pyyaml_1728657970485/work
-requests @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_ef59rwwti1/croot/requests_1756709671417/work
-requests-toolbelt==1.0.0
-selenium==4.35.0
-six @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_03myqm7p6o/croot/six_1744271511946/work
-sniffio==1.3.1
-sortedcontainers==2.4.0
-soupsieve @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_9798xzs_03/croot/soupsieve_1696347567192/work
-trio==0.30.0
-trio-websocket==0.12.2
-typing_extensions==4.14.1
-tzdata @ file:///croot/python-tzdata_1746123641790/work
-undetected-chromedriver==3.5.5
-urllib3 @ file:///private/var/folders/k1/30mswbxs7r1g6zwn8y4fyt500000gp/T/abs_95v32ztwo_/croot/urllib3_1750775480393/work
-webdriver-manager==4.0.2
-websocket-client==1.8.0
-websockets==15.0.1
-wsproto==1.2.0
+PyYAML==6.0.2
+PyYAML==6.0.3
+Requests==2.32.5
+scikit_learn==1.7.2

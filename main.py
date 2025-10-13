@@ -19,6 +19,7 @@ if __name__ == "__main__":
     # scrape_new_posts(limit=50)
     # preprocess_all_html_posts()
 
+
     # alpha researcher --------------------------------
     # opAndFeature = OpAndFeature()
     # opAndFeature.get_operators()
@@ -26,12 +27,6 @@ if __name__ == "__main__":
     #
     # generate_template_ops()
     # generate_template_fields_v2()
-
-
-
-    # template_file = from_post_to_template()
-    # alphas_file = generate_alphas_from_template(template_file)
-
 
     POSTS_DIR = Path("data/wq_posts/helpful_posts")
     for json_file in POSTS_DIR.glob("*.json"):
@@ -42,10 +37,7 @@ if __name__ == "__main__":
         alphas_file = generate_alphas_from_template(template_file)
 
 
-    # ALPHA_DIR = Path("data/alpha_db/all_alphas")
-    # for json_file in ALPHA_DIR.glob("*.json"):
-    #     backtest_result = run_backtest_mul_by_wq_api(json_file)
-
+    # alpha evaluator ----------------------------------
     # ALPHA_DIR = Path("data/alpha_db/all_alphas")
     # json_files = list(ALPHA_DIR.glob("*.json"))
     # random.shuffle(json_files)
