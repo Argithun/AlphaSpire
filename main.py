@@ -28,18 +28,18 @@ if __name__ == "__main__":
     # generate_template_ops()
     # generate_template_fields_v2()
 
-    POSTS_DIR = Path("data/wq_posts/helpful_posts")
-    for json_file in POSTS_DIR.glob("*.json"):
-
-        template_file = from_post_to_template(str(json_file))
-        if template_file is None:
-            continue
-        alphas_file = generate_alphas_from_template(template_file)
+    # POSTS_DIR = Path("data/wq_posts/helpful_posts")
+    # for json_file in POSTS_DIR.glob("*.json"):
+    #
+    #     template_file = from_post_to_template(str(json_file))
+    #     if template_file is None:
+    #         continue
+    #     alphas_file = generate_alphas_from_template(template_file)
 
 
     # alpha evaluator ----------------------------------
-    # ALPHA_DIR = Path("data/alpha_db/all_alphas")
-    # json_files = list(ALPHA_DIR.glob("*.json"))
-    # random.shuffle(json_files)
-    # for json_file in json_files:
-    #     backtest_result = run_backtest_mul_by_wq_api(json_file)
+    ALPHA_DIR = Path("data/alpha_db/all_alphas")
+    json_files = list(ALPHA_DIR.glob("*.json"))
+    random.shuffle(json_files)
+    for json_file in json_files:
+        backtest_result = run_backtest_mul_by_wq_api(json_file)

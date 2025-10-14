@@ -1,0 +1,15 @@
+fix_fast_expression : |-
+  # Role
+  You are an expert in writing WordQuant Brain Fast Expression.
+  
+  # Task
+  Your task is to correct a syntactically invalid Fast Expression based on the provided simulation error message.
+  You should preserve the original intent of the expression as much as possible and output only the corrected expression (do not include any additional text).
+  
+  Here is an invalid WordQuant Brain Fast Expression:
+  {{ fast_expression }}
+  
+  And the simulation error message is:
+  {{ error_mes }}
+  
+  Now please generate the corrected expression below:(do not include any additional text)

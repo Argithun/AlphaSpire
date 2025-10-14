@@ -5,7 +5,10 @@ import logging
 from pathlib import Path
 from time import sleep
 import requests
+from openai import OpenAI
 from requests.auth import HTTPBasicAuth
+
+from evaluator.construct_prompts import build_fix_fast_expression_prompt
 from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -109,28 +112,33 @@ def run_backtest_mul_by_wq_api(alphas_json_file, batch_size=15):
                 continue
 
             sim_id = sim_url.split("/")[-1]
-            pending[sim_id] = {"alpha": alpha_expr, "progress_url": sim_url}
+            pending[sim_id] = {"alpha": alpha_expr, "progress_url": sim_url, "first_time": True}
 
             print(f"📩 提交成功: {i}/{len(alphas)} -> {alpha_expr[:50]}...")
 
             # 控制批量大小
             if len(pending) >= batch_size:
-                monitor_pending(sess, pending, writer)
+                monitor_pending(sess, pending, writer, alphas_json_file)
         except Exception as e:
             logging.error(f"提交 {alpha_expr} 出错: {e}")
             retry_queue.append(alpha_expr)
 
     # 处理剩余的
     if pending:
-        monitor_pending(sess, pending, writer)
+        monitor_pending(sess, pending, writer, alphas_json_file)
 
     csv_file.close()
     print(f"🎯 回测完成，结果已保存 {out_csv}")
     return str(out_csv)
 
 
-def monitor_pending(sess, pending, writer):
+def monitor_pending(sess, pending, writer, alphas_json_file):
     """监控 pending 队列直到全部完成"""
+    client = OpenAI(
+        base_url=ConfigLoader.get("openai_base_url"),
+        api_key=ConfigLoader.get("openai_api_key"),
+    )
+
     while pending:
         finished_ids = []
         for sim_id, info in list(pending.items()):
@@ -142,7 +150,7 @@ def monitor_pending(sess, pending, writer):
                 status_json = status_resp.json()
                 status = status_json.get("status")
 
-                if status == "COMPLETE" or status == "WARNING":
+                if status in ("COMPLETE", "WARNING"):
                     alpha_id = status_json.get("alpha")
                     if not alpha_id:
                         finished_ids.append(sim_id)
@@ -175,19 +183,115 @@ def monitor_pending(sess, pending, writer):
                     print(f"✅ 完成: {info['alpha']}... fitness={is_data.get('fitness')}")
 
                 elif status == "ERROR":
-                    writer.writerow({
-                        "alpha": info["alpha"],
-                        "sharpe": None,
-                        "turnover": None,
-                        "fitness": None,
-                        "returns": None,
-                        "drawdown": None,
-                        "margin": f"FAILED:{status}"
-                    })
-                    print(f"❌ Simulation failed: {info['alpha']}...")
-                    finished_ids.append(sim_id)
+                    if info["first_time"]: # 失败直接退出，修复带来的收益过低，时间损耗过高 TODO
+                        # 二次失败，写入 None
+                        writer.writerow({
+                            "alpha": info["alpha"],
+                            "sharpe": None,
+                            "turnover": None,
+                            "fitness": None,
+                            "returns": None,
+                            "drawdown": None,
+                            "margin": f"FAILED:{status}"
+                        })
+                        print(f"❌ 二次失败: {info['alpha'][:60]}...")
+                        finished_ids.append(sim_id)
+                    else:
+                        # === 使用 LLM 修复表达式 ===
+                        print(f"❌ 模拟失败: {info['alpha'][:60]}...")
+                        fix_exp_prompt = build_fix_fast_expression_prompt(info["alpha"], str(status_json))
+                        try:
+                            resp = client.chat.completions.create(
+                                model=ConfigLoader.get("reasoner_model_name"),
+                                messages=[
+                                    {"role": "system", "content": "You are an expert in Fast Expression syntax repair."},
+                                    {"role": "user", "content": fix_exp_prompt}
+                                ],
+                                temperature=0.2,
+                            )
+                            fixed_expr = resp.choices[0].message.content.strip()
+                            print(f"🧩 修复后的表达式: {fixed_expr}")
+
+                            # === 替换 alphas_json_file 文件中的旧 alpha
+                            try:
+                                with open(alphas_json_file, "r", encoding="utf-8") as f:
+                                    text = f.read()
+                                if info["alpha"] not in text:
+                                    print("⚠️ 原始表达式未在文件中找到，跳过替换")
+                                else:
+                                    new_text = text.replace(info["alpha"], fixed_expr, 1)  # 仅替换第一次出现
+                                    with open(alphas_json_file, "w", encoding="utf-8") as f:
+                                        f.write(new_text)
+                                    print(f"💾 已在 {alphas_json_file} 中替换修复后的表达式")
+                            except Exception as e:
+                                print(f"❌ 替换 {alphas_json_file} 中表达式失败: {e}")
+
+                            # === 再次提交修复后的表达式 ===
+                            payload = {
+                                "type": "REGULAR",
+                                "settings": {
+                                    "instrumentType": "EQUITY",
+                                    "region": "USA",
+                                    "universe": "TOP3000",
+                                    "delay": 1,
+                                    "decay": 0,
+                                    "neutralization": "SUBINDUSTRY",
+                                    "truncation": 0.01,
+                                    "pasteurization": "ON",
+                                    "unitHandling": "VERIFY",
+                                    "nanHandling": "OFF",
+                                    "language": "FASTEXPR",
+                                    "visualization": False,
+                                },
+                                "regular": fixed_expr
+                            }
+
+                            new_resp = sess.post("https://api.worldquantbrain.com/simulations", json=payload)
+                            if new_resp.status_code not in (200, 201):
+                                print(f"⚠️ 修复后提交失败 {new_resp.status_code}: {new_resp.text}")
+                                writer.writerow({
+                                    "alpha": info["alpha"],
+                                    "sharpe": None,
+                                    "turnover": None,
+                                    "fitness": None,
+                                    "returns": None,
+                                    "drawdown": None,
+                                    "margin": "FIX_FAIL_SUBMIT"
+                                })
+                                finished_ids.append(sim_id)
+                                continue
+
+                            new_url = new_resp.headers.get("Location")
+                            if not new_url:
+                                print("⚠️ 修复后提交未返回Location，跳过")
+                                finished_ids.append(sim_id)
+                                continue
+
+                            # 替换原 pending 任务为新任务
+                            new_id = new_url.split("/")[-1]
+                            pending[new_id] = {
+                                "alpha": fixed_expr,
+                                "progress_url": new_url,
+                                "first_time": False  # 标记为已修复
+                            }
+                            finished_ids.append(sim_id)
+                            print(f"🔁 已重新提交修复后的表达式 {new_id}")
+
+                        except Exception as e:
+                            logging.error(f"修复表达式失败: {e}")
+                            writer.writerow({
+                                "alpha": info["alpha"],
+                                "sharpe": None,
+                                "turnover": None,
+                                "fitness": None,
+                                "returns": None,
+                                "drawdown": None,
+                                "margin": "FIX_FAIL_LLM"
+                            })
+                            finished_ids.append(sim_id)
+
                 else:
-                    print(f"⏳ {info['alpha']} simulation status: {status}")
+                    print(f"⏳ {info['alpha'][:40]}... simulation status: {status}")
 
             except Exception as e:
                 logging.error(f"检查 {sim_id} 出错: {e}")

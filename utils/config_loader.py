@@ -33,6 +33,7 @@ class ConfigLoader:
             "openai_base_url": os.getenv("OPENAI_BASE_URL", yaml_config.get("openai_base_url")),
             "openai_api_key": os.getenv("OPENAI_API_KEY", yaml_config.get("openai_api_key")),
             "openai_model_name": os.getenv("OPENAI_MODEL_NAME", yaml_config.get("openai_model_name")),
+            "reasoner_model_name": os.getenv("REASONER_MODEL_NAME", yaml_config.get("reasoner_model_name")),
 
             "worldquant_account": os.getenv("WORLDQUANT_ACCOUNT", yaml_config.get("worldquant_account")),
             "worldquant_password": os.getenv("WORLDQUANT_PASSWORD", yaml_config.get("worldquant_password")),

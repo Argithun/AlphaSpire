@@ -6,6 +6,7 @@
 openai_base_url: "https://api.deepseek.com"
 openai_api_key: "sk-68e7d28e93644fc8974dd59a5d403666"
 openai_model_name: "deepseek-chat"
+reasoner_model_name: "deepseek-reasoner"
 
 # --- WorldQuant Platform Credentials ---
 worldquant_account: "alan_younger@qq.com"
