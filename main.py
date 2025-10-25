@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
 
     # alpha evaluator ----------------------------------
-    ALPHA_DIR = Path("data/alpha_db/all_alphas")
+    ALPHA_DIR = Path("data/alpha_db_v2/all_alphas")
     json_files = list(ALPHA_DIR.glob("*.json"))
     random.shuffle(json_files)
     for json_file in json_files:
