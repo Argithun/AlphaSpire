@@ -110,10 +110,6 @@ enabled_field_datasets: # Select the field database you want to use to build alp
 
 3. One-click operation
     ```bash
-    ./test_script.sh
-    ```
-    OR
-    ```bash
     python3 main.py
     ```
 
