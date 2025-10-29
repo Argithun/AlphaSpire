@@ -16,7 +16,7 @@ from utils.wq_info_loader import OpAndFeature
 
 if __name__ == "__main__":
     # data scraper ------------------------------------
-    scrape_new_posts(limit=50)
+    scrape_new_posts(limit=200)
     preprocess_all_html_posts()
 
 
