@@ -16,25 +16,25 @@ from utils.wq_info_loader import OpAndFeature
 
 if __name__ == "__main__":
     # data scraper ------------------------------------
-    # scrape_new_posts(limit=50)
-    # preprocess_all_html_posts()
+    scrape_new_posts(limit=50)
+    preprocess_all_html_posts()
 
 
     # alpha researcher --------------------------------
-    # opAndFeature = OpAndFeature()
-    # opAndFeature.get_operators()
-    # opAndFeature.get_data_fields()
-    #
-    # generate_template_ops()
-    # generate_template_fields_v2()
+    opAndFeature = OpAndFeature()
+    opAndFeature.get_operators()
+    opAndFeature.get_data_fields()
+    
+    generate_template_ops()
+    generate_template_fields_v2()
 
-    # POSTS_DIR = Path("data/wq_posts/helpful_posts")
-    # for json_file in POSTS_DIR.glob("*.json"):
-    #
-    #     template_file = from_post_to_template(str(json_file))
-    #     if template_file is None:
-    #         continue
-    #     alphas_file = generate_alphas_from_template(template_file)
+    POSTS_DIR = Path("data/wq_posts/helpful_posts")
+    for json_file in POSTS_DIR.glob("*.json"):
+    
+        template_file = from_post_to_template(str(json_file))
+        if template_file is None:
+            continue
+        alphas_file = generate_alphas_from_template(template_file)
 
 
     # alpha evaluator ----------------------------------
