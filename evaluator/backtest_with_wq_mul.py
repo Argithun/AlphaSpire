@@ -12,7 +12,7 @@ from evaluator.construct_prompts import build_fix_fast_expression_prompt
 from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
-BACKTEST_DIR = BASE_DIR / "data" / "alpha_db_v2_ASI" / "backtest_result"
+BACKTEST_DIR = BASE_DIR / "data" / "alpha_db_v2" / "backtest_result"
 BACKTEST_DIR.mkdir(parents=True, exist_ok=True)
 
 logging.basicConfig(filename='backtest_with_wq.log', level=logging.INFO,
