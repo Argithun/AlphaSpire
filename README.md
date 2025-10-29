@@ -116,3 +116,30 @@ enabled_field_datasets: # Select the field database you want to use to build alp
     ```bash
     python3 main.py
     ```
+
+## Notice
+
+Regarding WorldQuant backtest parameter settings, currently only manual modification of the parameters in the following code section in evaluator/backtest_with_wq_mul.py is supported. 
+These will be moved to a separate config file in future versions.
+
+```
+payload = {
+    "type": "REGULAR",
+    "settings": {
+        "instrumentType": "EQUITY",
+        "region": "ASI",
+        "universe": "MINVOL1M",
+        "delay": 1,
+        "decay": 6,
+        "neutralization": "SUBINDUSTRY",
+        "truncation": 0.01,
+        "pasteurization": "ON",
+        "unitHandling": "VERIFY",
+        "nanHandling": "ON",
+        "maxTrade": "ON",
+        "language": "FASTEXPR",
+        "visualization": False,
+    },
+    "regular": fixed_expr
+}
+```
