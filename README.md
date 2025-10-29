@@ -79,39 +79,56 @@ Use the WorldQuant backtesting API to evaluate alpha performance and save the re
     conda activate alphaspire
     ```
 2. Fill in the configuration file (config.yaml)
-```yaml
-# ===============================
-# Global Configuration File
-# ===============================
-
-# --- OpenAI API Settings ---
-openai_base_url: "todo" # e.g. https://api.deepseek.com
-openai_api_key: "todo" # e.g. sk-...
-openai_model_name: "todo" # e.g. deepseek-chat
-reasoner_model_name: "todo" # e.g. deepseek-reasoner
-
-# --- WorldQuant Platform Credentials ---
-worldquant_account: "todo"
-worldquant_password: "todo"
-
-worldquant_login_url: "https://platform.worldquantbrain.com/sign-in"
-worldquant_api_auth: "https://api.worldquantbrain.com/authentication"
-worldquant_consultant_posts_url: "https://support.worldquantbrain.com/hc/en-us/community/topics/18910956638743-顾问专属中文论坛"
-# You can also choose any other WorldQuant Forum URL you have access to.
-
-# --- Dataset from WorldQuant Brain
-enabled_field_datasets: # Select the field database you want to use to build alphas.
-  - pv1                 # Database name reference ./data/wq_fields
-  - fundamental6
-  - analyst4
-  - model16
-  - news12   
-```
+    ```yaml
+    # ===============================
+    # Global Configuration File
+    # ===============================
+    
+    # --- OpenAI API Settings ---
+    openai_base_url: "todo" # e.g. https://api.deepseek.com
+    openai_api_key: "todo" # e.g. sk-...
+    openai_model_name: "todo" # e.g. deepseek-chat
+    reasoner_model_name: "todo" # e.g. deepseek-reasoner
+    
+    # --- WorldQuant Platform Credentials ---
+    worldquant_account: "todo"
+    worldquant_password: "todo"
+    
+    worldquant_login_url: "https://platform.worldquantbrain.com/sign-in"
+    worldquant_api_auth: "https://api.worldquantbrain.com/authentication"
+    worldquant_consultant_posts_url: "https://support.worldquantbrain.com/hc/en-us/community/topics/18910956638743-顾问专属中文论坛"
+    # You can also choose any other WorldQuant Forum URL you have access to.
+    
+    # --- Dataset from WorldQuant Brain
+    enabled_field_datasets: # Select the field database you want to use to build alphas.
+      - pv1                 # Database name reference ./data/wq_fields
+      - fundamental6
+      - analyst4
+      - model16
+      - news12   
+    ```
 
 3. One-click operation
-    ```bash
-    python3 main.py
-    ```
+   * Full process operation
+       ```bash
+        python3 main.py
+       ```
+   * Only run post crawl
+       ```bash
+        python3 main_scraper.py
+       ```
+   * Only run Alpha generation
+       ```bash
+        python3 main_researcher.py
+       ```
+   * Only run Alpha backtests
+       ```bash
+        ./test_script.sh
+       ```
+     OR
+       ```bash
+        python3 main_evaluator.py
+       ```
 
 ## Notice
 
