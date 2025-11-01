@@ -2,15 +2,3 @@
 # Global Configuration File
 # ===============================
 
-# --- OpenAI API Settings ---
-openai_base_url: "https://api.deepseek.com"
-openai_api_key: "sk-68e7d28e93644fc8974dd59a5d403666"
-openai_model_name: "deepseek-chat"
-
-# --- WorldQuant Platform Credentials ---
-worldquant_account: "alan_younger@qq.com"
-worldquant_password: "alan888@WQ"
-
-worldquant_login_url: "https://platform.worldquantbrain.com/sign-in"
-worldquant_api_auth: "https://api.worldquantbrain.com/authentication"
-worldquant_consultant_posts_url: "https://support.worldquantbrain.com/hc/en-us/community/topics/18910956638743-顾问专属中文论坛"
