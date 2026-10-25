@@ -33,3 +33,20 @@ research:
   request_timeout: 120
   max_tokens: 6000
   temperature: 0.2
+
+# --- WorldQuant Backtest Settings ---
+backtest:
+  type: REGULAR
+  settings:
+    instrumentType: EQUITY
+    region: USA
+    universe: TOP3000
+    delay: 1
+    decay: 0
+    neutralization: SUBINDUSTRY
+    truncation: 0.01
+    pasteurization: "ON"
+    unitHandling: VERIFY
+    nanHandling: "OFF"
+    language: FASTEXPR
+    visualization: false

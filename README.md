@@ -237,27 +237,39 @@ Use the WorldQuant backtesting API to evaluate alpha performance and save the re
 
 ## Notice
 
-Regarding WorldQuant backtest parameter settings, currently only manual modification of the parameters in the following code section in evaluator/backtest_with_wq_mul.py is supported. 
-These will be moved to a separate config file in future versions.
+WorldQuant simulation parameters are configured in the `backtest` section of
+`config.yaml`; editing evaluator source code is no longer necessary:
 
+```yaml
+backtest:
+  type: REGULAR
+  settings:
+    instrumentType: EQUITY
+    region: USA
+    universe: TOP3000
+    delay: 1
+    decay: 0
+    neutralization: SUBINDUSTRY
+    truncation: 0.01
+    pasteurization: "ON"
+    unitHandling: VERIFY
+    nanHandling: "OFF"
+    language: FASTEXPR
+    visualization: false
 ```
-payload = {
-    "type": "REGULAR",
-    "settings": {
-        "instrumentType": "EQUITY",
-        "region": "ASI",
-        "universe": "MINVOL1M",
-        "delay": 1,
-        "decay": 6,
-        "neutralization": "SUBINDUSTRY",
-        "truncation": 0.01,
-        "pasteurization": "ON",
-        "unitHandling": "VERIFY",
-        "nanHandling": "ON",
-        "maxTrade": "ON",
-        "language": "FASTEXPR",
-        "visualization": False,
-    },
-    "regular": fixed_expr
-}
-```
+
+- Serial evaluation, batch evaluation and expression-repair resubmissions share
+  the same configuration through `evaluator/simulation_config.py`. Repair
+  resubmissions no longer silently switch to a different region or universe.
+- The defaults preserve the existing initial simulation settings: USA/TOP3000,
+  decay 0 and NaN handling OFF. Older configuration files without `backtest`, or
+  with only some settings specified, inherit these defaults.
+- Keep `type: REGULAR` and `language: FASTEXPR` for the generated expressions.
+  Optional WQ settings can be added under `settings`, such as `maxTrade: "ON"`,
+  when appropriate for your selected simulation setup. Quote `"ON"` and `"OFF"`
+  so the YAML loader does not convert them to booleans.
+- Settings are loaded when an evaluator run starts. Restart the process after
+  changing `config.yaml`. Existing result CSVs still skip expressions already
+  evaluated; archive or rename the relevant CSV before rerunning with new settings.
+- Ensure the selected market and universe match your available fields. This
+  section changes evaluation parameters only, not field acquisition or research.

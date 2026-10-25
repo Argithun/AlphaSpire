@@ -43,7 +43,8 @@ class ConfigLoader:
                                                          yaml_config.get("worldquant_consultant_posts_url")),
 
             "enabled_field_datasets": yaml_config.get("enabled_field_datasets", []),
-            "research": yaml_config.get("research", {})
+            "research": yaml_config.get("research", {}),
+            "backtest": yaml_config.get("backtest", {})
         }
 
         # 确保是列表格式

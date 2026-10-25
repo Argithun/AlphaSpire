@@ -9,6 +9,7 @@ from openai import OpenAI
 from requests.auth import HTTPBasicAuth
 
 from evaluator.construct_prompts import build_fix_fast_expression_prompt
+from evaluator.simulation_config import build_simulation_payload, load_simulation_config
 from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -33,6 +34,7 @@ def sign_in():
 
 def run_backtest_mul_by_wq_api(alphas_json_file, batch_size=15):
     """批量回测指定 alphas json 文件，采用等待队列方式提升效率"""
+    simulation_config = load_simulation_config()
     sess = sign_in()
 
     # === 1. 读 alpha JSON ===
@@ -67,27 +69,6 @@ def run_backtest_mul_by_wq_api(alphas_json_file, batch_size=15):
     if csv_file.tell() == 0:
         writer.writeheader()
 
-    # === 4. 构造 payload 模板 ===
-    def make_payload(expr):
-        return {
-            "type": "REGULAR",
-            "settings": {
-                "instrumentType": "EQUITY",
-                "region": "USA",
-                "universe": "TOP3000",
-                "delay": 1,
-                "decay": 0,
-                "neutralization": "SUBINDUSTRY",
-                "truncation": 0.01,
-                "pasteurization": "ON",
-                "unitHandling": "VERIFY",
-                "nanHandling": "OFF",
-                "language": "FASTEXPR",
-                "visualization": False,
-            },
-            "regular": expr
-        }
-
     # === 5. 提交 & 管理 pending 队列 ===
     pending = {}  # sim_id -> {"alpha": expr, "progress_url": url}
     retry_queue = []
@@ -98,7 +79,8 @@ def run_backtest_mul_by_wq_api(alphas_json_file, batch_size=15):
 
         # 提交 alpha
         try:
-            resp = sess.post("https://api.worldquantbrain.com/simulations", json=make_payload(alpha_expr))
+            resp = sess.post("https://api.worldquantbrain.com/simulations",
+                             json=build_simulation_payload(alpha_expr, simulation_config))
             if resp.status_code not in (200, 201):
                 if "SIMULATION_LIMIT_EXCEEDED" in resp.text:
                     retry_queue.append(alpha_expr)
@@ -118,22 +100,24 @@ def run_backtest_mul_by_wq_api(alphas_json_file, batch_size=15):
 
             # 控制批量大小
             if len(pending) >= batch_size:
-                monitor_pending(sess, pending, writer, alphas_json_file)
+                monitor_pending(sess, pending, writer, alphas_json_file, simulation_config)
         except Exception as e:
             logging.error(f"提交 {alpha_expr} 出错: {e}")
             retry_queue.append(alpha_expr)
 
     # 处理剩余的
     if pending:
-        monitor_pending(sess, pending, writer, alphas_json_file)
+        monitor_pending(sess, pending, writer, alphas_json_file, simulation_config)
 
     csv_file.close()
     print(f"🎯 回测完成，结果已保存 {out_csv}")
     return str(out_csv)
 
 
-def monitor_pending(sess, pending, writer, alphas_json_file):
+def monitor_pending(sess, pending, writer, alphas_json_file, simulation_config=None):
     """监控 pending 队列直到全部完成"""
+    if simulation_config is None:
+        simulation_config = load_simulation_config()
     client = OpenAI(
         base_url=ConfigLoader.get("openai_base_url"),
         api_key=ConfigLoader.get("openai_api_key"),
@@ -227,25 +211,7 @@ def monitor_pending(sess, pending, writer, alphas_json_file):
                                 print(f"❌ 替换 {alphas_json_file} 中表达式失败: {e}")
 
                             # === 再次提交修复后的表达式 ===
-                            payload = {
-                                "type": "REGULAR",
-                                "settings": {
-                                    "instrumentType": "EQUITY",
-                                    "region": "ASI",
-                                    "universe": "MINVOL1M",
-                                    "delay": 1,
-                                    "decay": 6,
-                                    "neutralization": "SUBINDUSTRY",
-                                    "truncation": 0.01,
-                                    "pasteurization": "ON",
-                                    "unitHandling": "VERIFY",
-                                    "nanHandling": "ON",
-                                    "maxTrade": "ON",
-                                    "language": "FASTEXPR",
-                                    "visualization": False,
-                                },
-                                "regular": fixed_expr
-                            }
+                            payload = build_simulation_payload(fixed_expr, simulation_config)
 
                             new_resp = sess.post("https://api.worldquantbrain.com/simulations", json=payload)
                             if new_resp.status_code not in (200, 201):

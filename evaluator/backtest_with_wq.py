@@ -6,6 +6,7 @@ from time import sleep
 import requests
 from requests.auth import HTTPBasicAuth
 
+from evaluator.simulation_config import build_simulation_payload, load_simulation_config
 from utils.config_loader import ConfigLoader
 
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -30,6 +31,7 @@ def sign_in():
 
 def run_backtest_by_wq_api(alphas_json_file):
     """回测指定 alphas json 文件"""
+    simulation_config = load_simulation_config()
     sess = sign_in()
 
     # === 1. 读 alpha JSON ===
@@ -76,24 +78,7 @@ def run_backtest_by_wq_api(alphas_json_file):
             continue
 
         # 组装模拟参数
-        alpha_payload = {
-            "type": "REGULAR",
-            "settings": {
-                "instrumentType": "EQUITY",
-                "region": "USA",
-                "universe": "TOP3000",
-                "delay": 1,
-                "decay": 0,
-                "neutralization": "SUBINDUSTRY",
-                "truncation": 0.01,
-                "pasteurization": "ON",
-                "unitHandling": "VERIFY",
-                "nanHandling": "OFF",
-                "language": "FASTEXPR",
-                "visualization": False,
-            },
-            "regular": alpha_expr
-        }
+        alpha_payload = build_simulation_payload(alpha_expr, simulation_config)
 
         print(f"[{index}/{len(alphas)}] 回测 alpha: {alpha_expr[:60]}...")
         keep_trying = True
