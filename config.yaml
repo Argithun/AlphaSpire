@@ -24,3 +24,12 @@ enabled_field_datasets: # Select the field database you want to use to build alp
   - analyst4
   - model16
   - news12
+
+# --- Multi-Agent Research Committee ---
+research:
+  discussion_rounds: 1
+  max_workers: 3
+  max_retries: 2
+  request_timeout: 120
+  max_tokens: 6000
+  temperature: 0.2

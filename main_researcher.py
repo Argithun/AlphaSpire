@@ -1,3 +1,4 @@
+import argparse
 import random
 from pathlib import Path
 
@@ -14,6 +15,9 @@ from utils.template_op_gener import generate_template_ops
 from utils.wq_info_loader import OpAndFeature
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate alphas with the specialist research committee")
+    parser.add_argument("--force", action="store_true", help="Regenerate existing templates and alphas")
+    args = parser.parse_args()
 
     # alpha researcher --------------------------------
     opAndFeature = OpAndFeature()
@@ -26,7 +30,7 @@ if __name__ == "__main__":
     POSTS_DIR = Path("data/wq_posts/helpful_posts")
     for json_file in POSTS_DIR.glob("*.json"):
 
-        template_file = from_post_to_template(str(json_file))
+        template_file = from_post_to_template(str(json_file), force=args.force)
         if template_file is None:
             continue
         alphas_file = generate_alphas_from_template(template_file)

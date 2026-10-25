@@ -42,7 +42,8 @@ class ConfigLoader:
             "worldquant_consultant_posts_url": os.getenv("WORLDQUANT_CONSULTANT_POSTS_URL",
                                                          yaml_config.get("worldquant_consultant_posts_url")),
 
-            "enabled_field_datasets": yaml_config.get("enabled_field_datasets", [])
+            "enabled_field_datasets": yaml_config.get("enabled_field_datasets", []),
+            "research": yaml_config.get("research", {})
         }
 
         # 确保是列表格式

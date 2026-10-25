@@ -36,6 +36,7 @@ Thumbs.db
 data/alpha_db*
 data/hypothesis_db*
 data/template_db*
+data/research_db*
 test/
 
 # Playwright/Browser自动生成的数据

@@ -1,157 +1,111 @@
-import random
+import csv
 import json
+import random
 from pathlib import Path
 
-from researcher.construct_prompts import build_wq_knowledge_prompt, build_blog_to_hypothesis, \
-    build_hypothesis_to_template, build_check_if_blog_helpful
+from researcher.construct_prompts import build_wq_knowledge_prompt
+from researcher.multi_agent import ResearchCommittee, ResearchSettings, SCORE_WEIGHTS, TemplateValidator
 from utils.config_loader import ConfigLoader
 
-from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import LLMChain
-
-from utils.json_dealer import extract_json
-
-# --- 路径 ---
 BASE_DIR = Path(__file__).resolve().parents[1]
 POSTS_DIR = BASE_DIR / "data" / "wq_posts" / "helpful_posts"
 HYPOTHESIS_DB = BASE_DIR / "data" / "hypothesis_db_v2"
 TEMPLATE_DB = BASE_DIR / "data" / "template_db_v2"
-PROMPT_FILE = BASE_DIR / "prompts" / "template_generating.yaml"
-
-HYPOTHESIS_DB.mkdir(parents=True, exist_ok=True)
-TEMPLATE_DB.mkdir(parents=True, exist_ok=True)
+RESEARCH_DB = BASE_DIR / "data" / "research_db_v2"
 
 
-# === LangChain Agent 初始化 ===
-def init_agent(system_prompt):
-    """初始化长时运行的Agent并注入System Prompt"""
-    base_url = ConfigLoader.get("openai_base_url")
-    api_key = ConfigLoader.get("openai_api_key")
-    model_name = ConfigLoader.get("openai_model_name")
-
-    llm = ChatOpenAI(
-        base_url=base_url,
-        api_key=api_key,
-        model=model_name,
-        temperature=0.2,
-    )
-
-    # memory 保存上下文
-    memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
-
-    # PromptTemplate — system prompt + user placeholder
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("user", "{input}")  # 后续只传 input
-    ])
-
-    chain = LLMChain(
-        llm=llm,
-        prompt=prompt,
-        memory=memory
-    )
-
-    return chain
+def load_template_validator() -> TemplateValidator:
+    enabled = ConfigLoader.get("enabled_field_datasets", [])
+    field_ids = set()
+    for field_file in (BASE_DIR / "data" / "wq_fields").glob("*.csv"):
+        if enabled and field_file.stem not in enabled:
+            continue
+        with open(field_file, encoding="utf-8") as handle:
+            field_ids.update(row["id"] for row in csv.DictReader(handle))
+    with open(BASE_DIR / "data" / "wq_template_fields" / "template_fields.json",
+              encoding="utf-8") as handle:
+        field_types = {}
+        for raw_type, field_list in json.load(handle).items():
+            clean_type = raw_type.removeprefix("</").removesuffix("/>")
+            if not enabled or clean_type.rsplit(":", 1)[-1] in enabled:
+                field_types[clean_type] = [field_id for field_id in field_list if field_id in field_ids]
+    operator_types = {}
+    operator_names = set()
+    with open(BASE_DIR / "data" / "wq_template_operators" / "template_operators.csv",
+              encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            operator_names.add(row["name"])
+            operator_types.setdefault(row["type"], []).append(row["name"])
+    return TemplateValidator(field_types, operator_types, field_ids, operator_names)
 
 
-# === 随机选择有用的 Blog Post ===
-def select_valid_post(chain):
-    post_files = list(POSTS_DIR.glob("*.json"))
-    if not post_files:
-        raise FileNotFoundError("❌ No blog post found in processed_posts folder")
-
-    # while True:
-    #     post_file = random.choice(post_files)
-    #     formatted = build_check_if_blog_helpful(post_file)
-    #     output = chain.run(input=formatted).strip()
-    #
-    #     if output == "Y":
-    #         print(f"✅ Selected blog post: {post_file}")
-    #         return post_file
-    #     else:
-    #         print(f"⚠️ Skipping blog post: {post_file} (not helpful)")
-    return random.choice(post_files)
+def save_json(path: Path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(".json.tmp")
+    temporary.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    temporary.replace(path)
 
 
-def check_if_post_helpful(chain, post_file):
-    formatted = build_check_if_blog_helpful(post_file)
-    output = chain.run(input=formatted).strip()
-    if output.upper().startswith("Y"):
-        return True
-    else:
-        return False
-
-
-# === 生成 Hypotheses ===
-def generate_hypotheses(chain, post_file):
-    formatted = build_blog_to_hypothesis(post_file)
-    output = chain.run(input=formatted).strip()
-
-    try:
-        hypotheses = extract_json(output)
-    except Exception:
-        raise ValueError(f"❌ Hypotheses output not valid JSON: {output}")
-
-    out_file = HYPOTHESIS_DB / f"{Path(post_file).stem}_hypotheses.json"
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(hypotheses, f, indent=2, ensure_ascii=False)
-
-    print(f"✅ Hypotheses saved: {out_file}")
-    return out_file
-
-
-# === 生成 Template ===
-def generate_template(chain, hypotheses_file):
-    formatted = build_hypothesis_to_template(hypotheses_file)
-    output = chain.run(input=formatted).strip()
-
-    try:
-        template_json = extract_json(output)
-    except Exception:
-        print(f"❌ Template output not valid JSON: {output}")
+def from_post_to_template(post_file: str = None, force: bool = False):
+    """Run the specialist committee and return a backward-compatible winning template."""
+    if post_file is None:
+        posts = list(POSTS_DIR.glob("*.json"))
+        if not posts:
+            raise FileNotFoundError(f"No helpful posts found in {POSTS_DIR}")
+        post_file = random.choice(posts)
+    post_path = Path(post_file)
+    template_file = TEMPLATE_DB / f"{post_path.stem}_hypotheses_template.json"
+    if template_file.exists() and not force:
+        print(f"✅ Template already exists: {template_file}")
         return None
 
-    out_file = TEMPLATE_DB / f"{Path(hypotheses_file).stem}_template.json"
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(template_json, f, indent=2, ensure_ascii=False)
+    with open(post_path, encoding="utf-8") as handle:
+        post = json.load(handle)
+    if not isinstance(post, dict) or not any(post.get(key) for key in ("title", "post_body", "post_comments")):
+        raise ValueError("Post must contain a title, body or comments")
+    settings = ResearchSettings.model_validate(ConfigLoader.get("research", {}))
+    committee = ResearchCommittee(build_wq_knowledge_prompt(), load_template_validator(), settings)
+    result = committee.run(post)
 
-    print(f"✅ Template saved: {out_file}")
-    return out_file
-
-
-# === 主流程 ===
-def from_post_to_template(post_file: str=None):
-    system_prompt = build_wq_knowledge_prompt()
-
-    chain = init_agent(system_prompt)
-
-    # Step 1: 选择 blog
-    if post_file:
-        post_stem = Path(post_file).stem
-        existing_template = TEMPLATE_DB / f"{post_stem}_hypotheses_template.json"
-        if existing_template.exists():
-            print(f"✅ Template already exists for {post_file}, skipping template and alpha generation.")
-            return None
-        blog_file = post_file
-
-        # if check_if_post_helpful(chain, post_file):
-        #     blog_file = post_file
-        # else:
-        #     print(f"⚠️ Skipping blog post: {post_file} (not helpful)")
-        #     return None
-    else:
-        blog_file = select_valid_post(chain)
-
-    # Step 2: 生成 Hypotheses
-    hypotheses_file = generate_hypotheses(chain, blog_file)
-
-    # Step 3: 生成 Template
-    template_file = generate_template(chain, hypotheses_file)
-
-    print(f"🎯 Finished: Template generated from {blog_file} successfully.")
+    hypotheses_file = HYPOTHESIS_DB / f"{post_path.stem}_hypotheses.json"
+    audit_file = RESEARCH_DB / f"{post_path.stem}_research.json"
+    hypotheses = []
+    for agent_id, output in result["hypotheses"].items():
+        for hypothesis in output["Hypotheses"]:
+            hypotheses.append({
+                "AgentId": agent_id,
+                "Hypothesis": hypothesis["Hypothesis"],
+                "Rationale": hypothesis["Rationale"],
+                "Evidence": hypothesis["Evidence"],
+                "Potential Fields": hypothesis["PotentialFields"],
+                "Potential Operators": hypothesis["PotentialOperators"],
+                "Risks": hypothesis["Risks"],
+            })
+    save_json(hypotheses_file, hypotheses)
+    save_json(audit_file, {
+        "WorkflowVersion": "multi_agent_v1",
+        "SourcePost": str(post_path.resolve()),
+        "Settings": settings.model_dump(),
+        "ModelName": ConfigLoader.get("openai_model_name"),
+        "ScoreWeights": SCORE_WEIGHTS,
+        "Agents": [agent.profile.model_dump() for agent in committee.agents],
+        "CandidateAuthors": {candidate_id: agent_id
+                             for agent_id, candidate_id in committee.candidate_ids.items()},
+        **result,
+    })
+    winner = result["winner"]
+    save_json(template_file, {
+        **{key: winner[key] for key in ("SelectedHypothesis", "TemplateExpression",
+                                      "Description", "ExpectedBehavior")},
+        "ResearchMetadata": {
+            "WorkflowVersion": "multi_agent_v1",
+            "CandidateId": winner["CandidateId"],
+            "Ranking": result["ranking"],
+            "ScoreMeaning": "Qualitative peer research scores, not backtest performance",
+            "AuditFile": str(audit_file.relative_to(BASE_DIR)),
+        },
+    })
+    print(f"🎯 Committee selected {winner['CandidateId']}: {template_file}")
     return template_file
 
 
